@@ -110,18 +110,3 @@ class FromHuggingFace():
             print(f"Features saved to {save_path}")
     
         return features
-
-
-if __name__ == "__main__":
-    extractor = FromHuggingFace(
-        model="gpt2",
-        layer=3,
-        dataset_name="HuggingFaceFW/fineweb",
-        num_samples=500,
-        seq_length=1024,
-        inference_batch_size=16,
-        device="auto",
-        save_features=True
-    )
-    
-    features = extractor.extract_features()

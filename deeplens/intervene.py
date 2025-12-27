@@ -86,23 +86,3 @@ class Reinjector():
         """Injects the modified features to the respective layer of the model
         """
         pass
-
-
-if __name__ == "__main__":
-    from sklearn.datasets import load_digits
-
-    intervention = InterveneFeatures(
-        sae_model='saved_models/run_20251225_222241/sae_best.pt',
-        sae_config='configurations/test.yaml'
-    )
-
-    X, y = load_digits(return_X_y=True)
-    features = intervention.get_alive_features(X[0])
-    original, modified = intervention.intervene_feature(
-        example=X[0],
-        feature=172,
-        alpha=5
-    )
-    print(features)
-    print(original.shape)
-    print(modified.shape)
