@@ -5,3 +5,4 @@ deeplens.egg-info
 demo
 saved_features
 saved_models
+.DS_Store
