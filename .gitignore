@@ -6,3 +6,4 @@ demo
 saved_features
 saved_models
 .DS_Store
+wandb
