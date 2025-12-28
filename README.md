@@ -4,8 +4,14 @@
 __DeepLens__ is a library for mechanistic interpretability. It includes a full set of tools that allow end-to-end interpretability pipelines: from feature extraction, to feature steering. The library includes Sparse Autoencoders (TopK and L1), feature extractors, feature dataset modules, and intervention modules. 
 
 ## Quick How To
-### MLP Feature Extraction
+### Installation
+Install the requirements file `` and the recommended Pytorch CUDA versions:
+```
+pip install -r requirements.txt
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+```
 
+### 1. MLP Feature Extraction
 ```
 from deeplens.extractor import FromHuggingFace
 
@@ -23,57 +29,69 @@ extractor = FromHuggingFace(
 features = extractor.extract_features()
 ```
 
-### Training
+### 2. Training
 ```
-from src.sae import SparseAutoencoder
-from src.train import SAETrainer
-from src.utils.dataset import ActivationsDatasetBuilder
+from deeplens.sae import SparseAutoencoder
+from deeplens.train import SAETrainer
+from deeplens.utils.dataset import ActivationsDatasetBuilder
 import torch
 
 dataset = ActivationsDatasetBuilder(
-    activations="saved_features/features_layer_3_512000.pt"
+    activations="saved_features/features_layer_3_1024000.pt",
+    splits=[0.8, 0.2],
+    batch_size=16,
+    norm=True
 )
 train, eval = dataset.get_dataloaders()
 
-config = SAETrainer().config_from_yaml('configurations/test.yaml')
+config = SAETrainer().config_from_yaml('PATH_TO_MODEL_CONFIG')
 model = SparseAutoencoder(**config)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0003)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0003, betas=(0.9,0.99))
 
 trainer = SAETrainer(
     model=model,
     train_dataloader=train,
     eval_dataloader=eval,
     optim=optimizer,
-    epochs=100,
+    epochs=10,
     bf16=False,
     random_seed=42,
     save_checkpoints=True,
-    device="auto",
-    grad_clip_norm=2.0,
-    lrs_type='cosine'
+    device="cuda",
+    grad_clip_norm=3.0,
+    lrs_type='cosine',
+    eval_steps=5000,
+    save_best_only=True,
+    log_to_wandb=True
 )
 
 trainer.train()
 ```
 
-### Feature Intervention
+### 3. SAE Feature Extraction
 ```
-from sklearn.datasets import load_digits
-from deeplens.intervene import InterveneFeatures
-
-intervention = InterveneFeatures(
-    sae_model='saved_models/run_20251225_222241/sae_best.pt',
-    sae_config='configurations/test.yaml'
+text = "What color is the car next to Mary's house?"
+sample = ExtractSingleSample(
+    model="SAVED_MODEL_DIR",
+    sample=text,
+    layer=3,
+    max_length=512,
+    device="auto"
 )
 
-X, y = load_digits(return_X_y=True)
-features = intervention.get_alive_features(X[0])
-original, modified = intervention.intervene_feature(
-    example=X[0],
-    feature=172,
-    alpha=5
+acts = sample.get_mlp_acts()
+```
+
+### 4. Feature Intervention
+```
+text = "What color is the car next to Mary's house?"
+sample = ExtractSingleSample(
+    model="SAVED_MODEL_DIR",
+    sample=text,
+    layer=3,
+    max_length=512,
+    device="auto"
 )
-print(features)
-print(original.shape)
-print(modified.shape)
+
+acts = sample.get_mlp_acts()
 ```

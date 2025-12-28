@@ -49,6 +49,8 @@ class FromHuggingFace():
         else:
             self.device = torch.device(device)
         
+        print(f"Using device: {self.device}")
+        
         self.model.to(self.device)
         self.model.eval()
 
@@ -76,18 +78,21 @@ class FromHuggingFace():
     def extract_features(self) -> torch.Tensor:
         """Extract MLP activations from the specified layer
         """
-        print(f"Extracting features from layer {self.layer}...")
         hook, activations = self.get_activations(self.layer)
         all_activations = []
         batch_texts = []     
-        for example in tqdm(self.dataset, desc="Extracting features:", total=self.num_samples):
+        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}:", total=self.num_samples):
             batch_texts.append(example['text'])
             if len(batch_texts) == self.batch_size:
                 tokens = self.tokenize({'text': batch_texts})
                 tokens = {k: v.to(self.device) for k, v in tokens.items()}
                 _ = self.model(**tokens)
                 batch_acts = activations[-1]
-                all_activations.append(batch_acts)
+                attention_mask = tokens["attention_mask"].cpu()
+                for i in range(batch_acts.shape[0]):
+                    non_pad_mask = attention_mask[i].bool()
+                    valid_acts = batch_acts[i][non_pad_mask]
+                    all_activations.append(valid_acts)
                 batch_texts = []
         
         # for residual text not batched
@@ -96,17 +101,71 @@ class FromHuggingFace():
             tokens = {k: v.to(self.device) for k, v in tokens.items()}
             _ = self.model(**tokens)
             batch_acts = activations[-1]
-            all_activations.append(batch_acts)
-        
+            attention_mask = tokens["attention_mask"].cpu()
+            for i in range(batch_acts.shape[0]):
+                non_pad_mask = attention_mask[i].bool()
+                valid_acts = batch_acts[i][non_pad_mask]
+                all_activations.append(valid_acts)
+    
         hook.remove()
+
         features = torch.cat(all_activations, dim=0)
-        features = features.reshape(-1, features.shape[-1])
-        print(f"Extracted features (shape): {features.shape}")
+        print(f"Extracted features shape: {features.shape}")
         
         if self.save_features:
             os.makedirs('saved_features', exist_ok=True)
-            save_path = f"saved_features/features_layer_{self.layer}_{self.seq_length * self.num_samples}.pt"
+            save_path = f"saved_features/features_layer_{self.layer}_{features.shape[0]}.pt"
             torch.save(features, save_path)
             print(f"Features saved to {save_path}")
     
         return features
+
+class ExtractSingleSample():
+    def __init__(self, model, sample, layer, max_length, device):
+        self.model = AutoModel.from_pretrained(model)
+        self.tokenizer = AutoTokenizer.from_pretrained(model)
+        self.sample = sample
+        self.layer = layer
+        self.max_length = max_length
+
+        if device == "auto":
+            self.device = torch.device(
+                "cuda" if torch.cuda.is_available() 
+                else "mps" if torch.backends.mps.is_available()
+                else "cpu"
+            )
+        else:
+            self.device = torch.device(device)
+        
+        self.model.to(self.device)
+        self.model.eval()
+
+    @torch.no_grad()
+    def get_mlp_acts(self):
+        hook, activations = self.get_activations(self.layer)
+        tokens = self.tokenize(self.sample)
+        _ = self.model(**tokens)
+        acts = activations[-1].squeeze()
+        hook.remove()
+        return acts
+    
+    def tokenize(self, sample) -> torch.Tensor:
+        """Tokenize text examples
+        """
+        return self.tokenizer(
+            sample,
+            truncation=True,
+            padding=False,
+            max_length=self.max_length,
+            return_tensors='pt'
+        ).to(self.device)
+    
+    def get_activations(self, layer_idx) -> tuple:
+        """Register hook to capture MLP activations
+        """
+        activations = []
+        def hook_fn(module, input, output):
+            activations.append(output.detach().cpu())
+        hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        return hook, activations
+
