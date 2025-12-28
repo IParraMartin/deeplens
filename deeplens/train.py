@@ -3,12 +3,12 @@ import yaml
 from datetime import datetime
 
 import torch
-import torchvision
-from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 
 import numpy as np
+
+import wandb
 
 
 class SAETrainer():
@@ -17,6 +17,7 @@ class SAETrainer():
             train_dataloader: DataLoader = None, 
             eval_dataloader: DataLoader = None, 
             model: torch.nn.Module = None, 
+            model_name: str = "sae",
             optim: torch.optim.Optimizer = torch.optim.Adam,
             epochs: int = 20, 
             bf16: bool = False,
@@ -24,7 +25,10 @@ class SAETrainer():
             save_checkpoints: bool = True,
             device: str = "auto",
             grad_clip_norm: float = None,
-            lrs_type: str = None
+            lrs_type: str = None,
+            eval_steps: int = 5000,
+            save_best_only: bool = True,
+            log_to_wandb: bool = True
         ) -> None:
         """Sparse Autoencoder trainer class.
 
@@ -32,6 +36,7 @@ class SAETrainer():
             train_dataloader (DataLoader): _description_
             eval_dataloader (DataLoader): _description_
             model (torch.nn.Module): _description_
+            model_name (str): 
             optim (torch.optim.Optimizer, optional): _description_. Defaults to torch.optim.Adam.
             epochs (int, optional): _description_. Defaults to 20.
             bf16 (bool, optional): _description_. Defaults to False.
@@ -41,8 +46,11 @@ class SAETrainer():
             device (str, optional): _description_. Defaults to "auto".
             grad_clip_norm (float): 
             lrs_type (str):
+            eval_steps (int): 
+            save_best_only (bool): True
         """
         self.model = model
+        self.model_name = model_name
         self.optim = optim
         self.epochs = epochs
         self.train_dataloader = train_dataloader
@@ -51,6 +59,9 @@ class SAETrainer():
         self.random_seed = random_seed
         self.save_checkpoints = save_checkpoints
         self.grad_clip_norm = grad_clip_norm
+        self.eval_steps = eval_steps
+        self.save_best_only = save_best_only
+        self.log_wandb = log_to_wandb
 
         if device == "auto":
             self.device = torch.device(
@@ -60,20 +71,38 @@ class SAETrainer():
             )
         else:
             self.device = torch.device(device)
+        print(f"Running on device: {self.device}")
 
         if lrs_type is not None:
             self.scheduler = self.set_lr_scheduler(lrs_type)
         else:
             self.scheduler = None
 
+        if log_to_wandb:
+            time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            wandb.init(
+                project=f"sparse-autoencoder",
+                name=f"run-{self.model_name}-{time}",
+                config={
+                    "epochs": epochs, 
+                    "lr_scheduler": lrs_type,
+                    "seed": random_seed,
+                    "grad_clip_norm": grad_clip_norm,
+                    "bf16": bf16
+                }
+            )
+
     def train_one_epoch(
             self, 
             model: torch.nn.Module, 
             train_dataloader: torch.utils.data.DataLoader, 
             optim: torch.optim.Optimizer, 
-            bf16: bool = True
-        ) -> None:
-        """Training step (one epoch) for the traning loop
+            bf16: bool = True,
+            global_step: int = 0,
+            timestamp: str = None,
+            best_loss: float = float('inf')
+        ) -> tuple[int, float]:
+        """Training step (one epoch) for the training loop
         """
         model.train()
 
@@ -114,15 +143,53 @@ class SAETrainer():
                 self.scheduler.step()
             
             model.post_step()
+            global_step += 1
+
+            if self.log_wandb:
+                wandb.log({
+                    "train/loss": logs['mse'].item(),
+                    "train/non_zero_frac": logs['non_zero_frac'].item(),
+                    "train/lr": self.optim.param_groups[0]['lr'],
+                    "global_step": global_step
+                }, step=global_step)
 
             if (idx % 100) == 0:
                 current_lr = self.optim.param_groups[0]['lr']
                 print(
                     f"Step [{idx}/{len(train_dataloader)}] - "
                     f"train_loss: {round(logs['mse'].item(), 3)} - "
-                    f"eval_nz_frac: {round(logs['non_zero_frac'].item(), 3)} - "
+                    f"train_nz_frac: {round(logs['non_zero_frac'].item(), 3)} - "
                     f"lr: {current_lr:.2e}"
                 )
+
+            if global_step % self.eval_steps == 0:
+                print(f"\n{'='*60}")
+                print(f"Intermediate Evaluation at step {global_step}")
+                print(f"{'='*60}")
+                eval_loss = self.evaluate(
+                    model=model,
+                    eval_dataloader=self.eval_dataloader,
+                    bf16=bf16
+                )
+
+                if self.log_wandb:
+                    wandb.log({
+                        "eval/loss": eval_loss,
+                        "global_step": global_step
+                    }, step=global_step)
+                
+                if self.save_checkpoints and eval_loss < best_loss:
+                    if self.save_best_only:
+                        save_path = f"saved_models/{self.model_name}/run_{timestamp}/best_model.pt"
+                    else:
+                        save_path = f"saved_models/{self.model_name}/run_{timestamp}/sae_step_{global_step}.pt"
+                    torch.save(model.state_dict(), save_path)
+                    print(f"New best model saved (loss: {eval_loss:.6f})")
+                    best_loss = eval_loss
+                
+                model.train()
+        
+        return global_step, best_loss
 
     @torch.no_grad()
     def evaluate(
@@ -133,10 +200,13 @@ class SAETrainer():
         ) -> float:
         """Evaluation step of the training loop
         """
-
         model.eval()
+        n_batches = 0
+        total_loss = 0.0
+
         if bf16:
             device_type = "cuda" if torch.cuda.is_available() else "cpu"
+        
         for idx, inputs in enumerate(eval_dataloader):
             if torch.cuda.is_available() and bf16:
                 with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
@@ -146,6 +216,9 @@ class SAETrainer():
                 inputs = inputs.to(self.device)
                 loss, logs = model.loss(inputs)
 
+            total_loss += loss.item()
+            n_batches += 1
+
             if (idx % 100) == 0:
                 current_lr = self.optim.param_groups[0]['lr']
                 print(
@@ -154,9 +227,11 @@ class SAETrainer():
                     f"eval_nz_frac: {round(logs['non_zero_frac'].item(), 3)} - "
                     f"lr: {current_lr:.2e}"
                 )
-        
-        return loss.item()
 
+        avg_loss = total_loss / n_batches
+        print(f"Avg loss: {avg_loss:.3f}")
+        return avg_loss
+    
     def train(self) -> None:
         """Ensembled training loop.
         """
@@ -165,34 +240,55 @@ class SAETrainer():
 
         if self.save_checkpoints:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            os.makedirs(f"saved_models/run_{timestamp}", exist_ok=True)
+            os.makedirs(f"saved_models/{self.model_name}/run_{timestamp}", exist_ok=True)
 
         best_loss = float('inf')
+        global_step = 0
+        
         for epoch in range(self.epochs):
             print(f"\nEpoch [{epoch+1}/{self.epochs}]")
-            self.train_one_epoch(
+            global_step, best_loss = self.train_one_epoch(
                 model=self.model, 
                 train_dataloader=self.train_dataloader, 
                 optim=self.optim, 
-                bf16=self.bf16
+                bf16=self.bf16,
+                global_step=global_step,
+                timestamp=timestamp,
+                best_loss=best_loss
             )
+
+            print(f"\n{'='*60}")
+            print(f"End of epoch {epoch+1} evaluation")
+            print(f"{'='*60}")
             loss = self.evaluate(
                 model=self.model,
                 eval_dataloader=self.eval_dataloader,
                 bf16=self.bf16
             )
-            if self.save_checkpoints:
-                if loss < best_loss:
-                    save_path = f"saved_models/run_{timestamp}/sae_best.pt"
-                    torch.save(self.model.state_dict(), save_path)
-                    print(f"Model saved to {save_path}")
-                    best_loss = loss
+
+            if self.log_wandb:
+                wandb.log({
+                    "epoch": epoch + 1,
+                    "eval/epoch_loss": loss,
+                }, step=global_step)
             
+            if self.save_checkpoints and loss < best_loss:
+                if self.save_best_only:
+                    save_path = f"saved_models/{self.model_name}/run_{timestamp}/best_model.pt"
+                else:
+                    save_path = f"saved_models/{self.model_name}/run_{timestamp}/sae_epoch_{epoch+1}.pt"
+                torch.save(self.model.state_dict(), save_path)
+                print(f"New best model saved (loss: {loss:.3f})")
+                best_loss = loss
+
             if self.scheduler is not None and isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau):
                 self.scheduler.step(loss)
+        
+        if self.log_wandb:
+            wandb.finish()
 
         print("Finished training!")
-
+    
     def set_lr_scheduler(self, lr_type: str = 'cosine') -> lr_scheduler:
         """Sets a lr scheduler if name is provided
         """
@@ -250,25 +346,3 @@ class SAETrainer():
         with open(file, "r") as f:
             config = yaml.safe_load(f)
         return config
-
-    @staticmethod
-    def get_mnist(batch_size: int = 8) -> tuple:
-        """Get the MNIST dataset to train a demo autoencoder.
-        Returns dataloaders with the tensor dataset normalized.
-        """
-        transform = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.130,), (0.308,))]
-        )
-        trainset = torchvision.datasets.MNIST(
-            root='./data/', train=True, download=True, transform=transform
-        )
-        testset = torchvision.datasets.MNIST(
-            root='./data/', train=False, download=True, transform=transform
-        )
-        train_dataloader = torch.utils.data.DataLoader(
-            trainset, batch_size=batch_size, shuffle=True, num_workers=2
-        )
-        eval_dataloader = torch.utils.data.DataLoader(
-            testset, batch_size=batch_size, shuffle=False, num_workers=2
-        )
-        return train_dataloader, eval_dataloader
