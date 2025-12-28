@@ -3,12 +3,12 @@ import yaml
 from datetime import datetime
 
 import torch
-import torchvision
-from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 
 import numpy as np
+
+import wandb
 
 
 class SAETrainer():
@@ -17,6 +17,7 @@ class SAETrainer():
             train_dataloader: DataLoader = None, 
             eval_dataloader: DataLoader = None, 
             model: torch.nn.Module = None, 
+            model_name: str = "sae",
             optim: torch.optim.Optimizer = torch.optim.Adam,
             epochs: int = 20, 
             bf16: bool = False,
@@ -25,7 +26,9 @@ class SAETrainer():
             device: str = "auto",
             grad_clip_norm: float = None,
             lrs_type: str = None,
-            eval_steps: int = 5000
+            eval_steps: int = 5000,
+            save_best_only: bool = True,
+            log_to_wandb: bool = True
         ) -> None:
         """Sparse Autoencoder trainer class.
 
@@ -33,6 +36,7 @@ class SAETrainer():
             train_dataloader (DataLoader): _description_
             eval_dataloader (DataLoader): _description_
             model (torch.nn.Module): _description_
+            model_name (str): 
             optim (torch.optim.Optimizer, optional): _description_. Defaults to torch.optim.Adam.
             epochs (int, optional): _description_. Defaults to 20.
             bf16 (bool, optional): _description_. Defaults to False.
@@ -43,8 +47,10 @@ class SAETrainer():
             grad_clip_norm (float): 
             lrs_type (str):
             eval_steps (int): 
+            save_best_only (bool): True
         """
         self.model = model
+        self.model_name = model_name
         self.optim = optim
         self.epochs = epochs
         self.train_dataloader = train_dataloader
@@ -54,6 +60,8 @@ class SAETrainer():
         self.save_checkpoints = save_checkpoints
         self.grad_clip_norm = grad_clip_norm
         self.eval_steps = eval_steps
+        self.save_best_only = save_best_only
+        self.log_wandb = log_to_wandb
 
         if device == "auto":
             self.device = torch.device(
@@ -69,6 +77,20 @@ class SAETrainer():
             self.scheduler = self.set_lr_scheduler(lrs_type)
         else:
             self.scheduler = None
+
+        if log_to_wandb:
+            time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            wandb.init(
+                project=f"sparse-autoencoder",
+                name=f"run-{self.model_name}-{time}",
+                config={
+                    "epochs": epochs, 
+                    "lr_scheduler": lrs_type,
+                    "seed": random_seed,
+                    "grad_clip_norm": grad_clip_norm,
+                    "bf16": bf16
+                }
+            )
 
     def train_one_epoch(
             self, 
@@ -123,14 +145,21 @@ class SAETrainer():
             model.post_step()
             global_step += 1
 
+            if self.log_wandb:
+                wandb.log({
+                    "train/loss": logs['mse'].item(),
+                    "train/non_zero_frac": logs['non_zero_frac'].item(),
+                    "train/lr": self.optim.param_groups[0]['lr'],
+                    "global_step": global_step
+                }, step=global_step)
+
             if (idx % 100) == 0:
                 current_lr = self.optim.param_groups[0]['lr']
                 print(
                     f"Step [{idx}/{len(train_dataloader)}] - "
                     f"train_loss: {round(logs['mse'].item(), 3)} - "
                     f"train_nz_frac: {round(logs['non_zero_frac'].item(), 3)} - "
-                    f"lr: {current_lr:.2e} - "
-                    f"gpu_temp: {torch.cuda.temperature(device=0)}"
+                    f"lr: {current_lr:.2e}"
                 )
 
             if global_step % self.eval_steps == 0:
@@ -142,9 +171,18 @@ class SAETrainer():
                     eval_dataloader=self.eval_dataloader,
                     bf16=bf16
                 )
+
+                if self.log_wandb:
+                    wandb.log({
+                        "eval/loss": eval_loss,
+                        "global_step": global_step
+                    }, step=global_step)
                 
                 if self.save_checkpoints and eval_loss < best_loss:
-                    save_path = f"saved_models/run_{timestamp}/sae_step_{global_step}.pt"
+                    if self.save_best_only:
+                        save_path = f"saved_models/{self.model_name}/run_{timestamp}/best_model.pt"
+                    else:
+                        save_path = f"saved_models/{self.model_name}/run_{timestamp}/sae_step_{global_step}.pt"
                     torch.save(model.state_dict(), save_path)
                     print(f"New best model saved (loss: {eval_loss:.6f})")
                     best_loss = eval_loss
@@ -202,7 +240,7 @@ class SAETrainer():
 
         if self.save_checkpoints:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            os.makedirs(f"saved_models/run_{timestamp}", exist_ok=True)
+            os.makedirs(f"saved_models/{self.model_name}/run_{timestamp}", exist_ok=True)
 
         best_loss = float('inf')
         global_step = 0
@@ -227,15 +265,27 @@ class SAETrainer():
                 eval_dataloader=self.eval_dataloader,
                 bf16=self.bf16
             )
-        
+
+            if self.log_wandb:
+                wandb.log({
+                    "epoch": epoch + 1,
+                    "eval/epoch_loss": loss,
+                }, step=global_step)
+            
             if self.save_checkpoints and loss < best_loss:
-                save_path = f"saved_models/run_{timestamp}/sae_epoch_{epoch+1}.pt"
+                if self.save_best_only:
+                    save_path = f"saved_models/{self.model_name}/run_{timestamp}/best_model.pt"
+                else:
+                    save_path = f"saved_models/{self.model_name}/run_{timestamp}/sae_epoch_{epoch+1}.pt"
                 torch.save(self.model.state_dict(), save_path)
                 print(f"New best model saved (loss: {loss:.3f})")
                 best_loss = loss
-            
+
             if self.scheduler is not None and isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau):
                 self.scheduler.step(loss)
+        
+        if self.log_wandb:
+            wandb.finish()
 
         print("Finished training!")
     
