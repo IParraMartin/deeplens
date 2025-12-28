@@ -16,7 +16,8 @@ class InterveneFeatures():
     def __init__(
             self,
             sae_model: str = None,
-            sae_config: dict = None
+            sae_config: dict = None,
+            device: str = "auto"
         ):
         """Class to intervene features of the autoencoder's latent
         features
@@ -26,12 +27,24 @@ class InterveneFeatures():
             model_config (dict, optional): _description_. Defaults to None.
         """
         self.model_dir = sae_model
+
+        if device == "auto":
+            self.device = torch.device(
+                "cuda" if torch.cuda.is_available() 
+                else "mps" if torch.backends.mps.is_available()
+                else "cpu"
+            )
+        else:
+            self.device = torch.device(device)
+        print(f"Running on device: {self.device}")
+
         if str(sae_config).endswith(".yaml"):
             self.model_config = self.config_from_yaml(sae_config)
         elif type(sae_config) == dict:
             self.model_config = sae_config
         else:
             raise ValueError("Unsupported configuration.")
+        
         self.model = self.load_model()
 
     @torch.no_grad()
@@ -62,10 +75,10 @@ class InterveneFeatures():
     def load_model(self) -> torch.nn.Module:
         """Loads the sparse autoencoder
         """
-        weights = torch.load(self.model_dir)
+        weights = torch.load(self.model_dir, map_location=self.device)
         model = SparseAutoencoder(**self.model_config)
         model.load_state_dict(state_dict=weights)
-        return model
+        return model.to(self.device)
     
     def config_from_yaml(self, file) -> dict:
         """Returns a sparse autoencoder configuration

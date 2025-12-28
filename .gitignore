@@ -6,4 +6,5 @@ demo
 saved_features
 saved_models
 .DS_Store
+intervention.ipynb
 wandb

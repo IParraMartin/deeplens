@@ -7,7 +7,7 @@ name = "deeplens"
 version = "0.1.0"
 description = "A library to train and use Sparse Autoencoders for mechanistic interpretability"
 authors = [{name = "Iñigo Parra", email = "iparra@berkeley.edu"}]
-dependencies = ["torch", "torchaudio", "torchvision", "numpy", "pandas", "PyYAML", "transformers", "scikit_learn", "tqdm"]
+dependencies = ["numpy", "pandas", "PyYAML", "transformers", "scikit_learn", "tqdm"]
 
 [tool.setuptools]
 packages = ["deeplens", "deeplens.utils"]
