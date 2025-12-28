@@ -77,3 +77,9 @@ print(features)
 print(original.shape)
 print(modified.shape)
 ```
+
+### Note on CUDA
+Make sure all torch libraries are compatible. In the most recent version, I used: 
+```
+pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+```
