@@ -89,7 +89,7 @@ class InterveneFeatures():
         return config
     
 
-class Reinjector():
+class ReinjectSingleSample():
     def __init__(self, hf_model, features):
         self.model = AutoModel.from_pretrained(hf_model)
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
