@@ -13,7 +13,13 @@ train, eval = dataset.get_dataloaders()
 
 config = SAETrainer.config_from_yaml('demo/config.yaml')
 model = SparseAutoencoder(**config)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0003, betas=(0.9,0.99))
+
+optimizer = torch.optim.Adam(
+    model.parameters(), 
+    lr=0.0003, 
+    betas=(0.9,0.99),
+    weight_decay=1e-4 # Just when using untied weights! Else set to 0
+)
 
 trainer = SAETrainer(
     model=model,
@@ -25,7 +31,7 @@ trainer = SAETrainer(
     bf16=False,
     random_seed=42,
     save_checkpoints=True,
-    device="cuda",
+    device="auto",
     grad_clip_norm=3.0,
     lrs_type='cosine',
     eval_steps=5000,
