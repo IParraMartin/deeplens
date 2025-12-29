@@ -31,6 +31,8 @@ class SparseAutoencoder(nn.Module):
         self.norm = nn.LayerNorm(input_dims) if input_norm else nn.Identity()
         self.encoder = nn.Linear(input_dims, n_features, bias=True)
         self.decoder = None if tie_weights else nn.Linear(n_features, input_dims, bias=False)
+        self.unit_norm_decoder = unit_norm_decoder
+        self.input_norm = input_norm
 
         if activation == "relu":
             self.activation = nn.ReLU()
@@ -50,7 +52,6 @@ class SparseAutoencoder(nn.Module):
         self.k = k
         self.beta_l1 = beta_l1
         self.tie_weights = tie_weights
-        self.unit_norm_decoder = unit_norm_decoder
 
     @torch.no_grad()
     def _renorm_decoder(self, eps: float = 1e-8) -> None:

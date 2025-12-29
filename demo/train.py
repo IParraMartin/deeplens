@@ -11,13 +11,13 @@ dataset = ActivationsDatasetBuilder(
 )
 train, eval = dataset.get_dataloaders()
 
-config = SAETrainer().config_from_yaml('demo/config.yaml')
+config = SAETrainer.config_from_yaml('demo/config.yaml')
 model = SparseAutoencoder(**config)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0003, betas=(0.9,0.99))
 
 trainer = SAETrainer(
     model=model,
-    model_name="gpt2L3",
+    model_name="gpt2L3-untied",
     train_dataloader=train,
     eval_dataloader=eval,
     optim=optimizer,
