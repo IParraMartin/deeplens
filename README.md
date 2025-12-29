@@ -37,7 +37,7 @@ from deeplens.utils.dataset import ActivationsDatasetBuilder
 import torch
 
 dataset = ActivationsDatasetBuilder(
-    activations="saved_features/features_layer_3_1024000.pt",
+    activations="ACTIVATIONS_DATASET_DIR",
     splits=[0.8, 0.2],
     batch_size=16,
     norm=True
@@ -50,6 +50,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.0003, betas=(0.9,0.99))
 
 trainer = SAETrainer(
     model=model,
+    model_name="gpt2L3",
     train_dataloader=train,
     eval_dataloader=eval,
     optim=optimizer,
@@ -61,6 +62,7 @@ trainer = SAETrainer(
     grad_clip_norm=3.0,
     lrs_type='cosine',
     eval_steps=5000,
+    warmup_fraction=0.1,
     save_best_only=True,
     log_to_wandb=True
 )
