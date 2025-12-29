@@ -3,5 +3,6 @@ n_features: 24576
 activation: 'relu'
 input_norm: True
 k: 768
-tie_weights: True
+beta_l1: 1e-3
+tie_weights: False
 unit_norm_decoder: True
