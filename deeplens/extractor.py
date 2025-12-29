@@ -81,7 +81,7 @@ class FromHuggingFace():
         hook, activations = self.get_activations(self.layer)
         all_activations = []
         batch_texts = []     
-        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}:", total=self.num_samples):
+        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
             batch_texts.append(example['text'])
             if len(batch_texts) == self.batch_size:
                 tokens = self.tokenize({'text': batch_texts})
