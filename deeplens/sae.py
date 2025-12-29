@@ -11,7 +11,7 @@ class SparseAutoencoder(nn.Module):
             activation: str = "relu",
             input_norm: bool = True,
             k: int | None = None,
-            beta_l1: float = 1e-3,
+            beta_l1: float | None = None,
             tie_weights: bool = False,
             unit_norm_decoder: bool = True
         ) -> None:

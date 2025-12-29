@@ -92,6 +92,7 @@ class SAETrainer():
                     "activations": self.model.activation,
                     "input_norm": self.model.input_norm,
                     "top_k": self.model.k, 
+                    "l1": self.model.beta_l1,
                     "tie_weights": self.model.tie_weights,
                     "unit_norm_decoder": self.model.unit_norm_decoder,
                     "lr": optim.param_groups[0]['lr'],
