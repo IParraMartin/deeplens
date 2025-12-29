@@ -121,10 +121,24 @@ class FromHuggingFace():
         return features
 
 class ExtractSingleSample():
-    def __init__(self, model, sample, layer, max_length, device):
+    def __init__(
+            self, 
+            model: str = "gpt2", 
+            layer: int = 3, 
+            max_length: int = 1024, 
+            device: str = "auto"
+        ):
+        """_summary_
+
+        Args:
+            model (str, optional): _description_. Defaults to "gpt2".
+            sample (str, optional): _description_. Defaults to None.
+            layer (int, optional): _description_. Defaults to 3.
+            max_length (int, optional): _description_. Defaults to 1024.
+            device (str, optional): _description_. Defaults to "auto".
+        """
         self.model = AutoModel.from_pretrained(model)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
-        self.sample = sample
         self.layer = layer
         self.max_length = max_length
 
@@ -141,9 +155,9 @@ class ExtractSingleSample():
         self.model.eval()
 
     @torch.no_grad()
-    def get_mlp_acts(self):
+    def get_mlp_acts(self, sample):
         hook, activations = self.get_activations(self.layer)
-        tokens = self.tokenize(self.sample)
+        tokens = self.tokenize(sample)
         _ = self.model(**tokens)
         acts = activations[-1].squeeze()
         hook.remove()

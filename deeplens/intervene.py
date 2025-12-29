@@ -43,31 +43,50 @@ class InterveneFeatures():
         elif type(sae_config) == dict:
             self.model_config = sae_config
         else:
-            raise ValueError("Unsupported configuration.")
+            raise ValueError("sae_config must be dict or path to .yaml file")
         
         self.model = self.load_model()
 
     @torch.no_grad()
-    def get_alive_features(self, example) -> torch.Tensor:
-        """Returns non-zero features of the latent space
+    def get_alive_features(self, activations, token_position: int = -1) -> torch.Tensor:
+        """Returns non-zero features of the latent space for a given token
+        in a sequence
         """
-        if type(example) != torch.Tensor:
-            example = torch.Tensor(example)
-        _, z, _ = self.model(example)
-        features = torch.nonzero(z, as_tuple=False).squeeze()
-        return features
+        if not isinstance(activations, torch.Tensor):
+            activations = torch.Tensor(activations)
+        activations = activations.to(self.device)
+        _, z, _ = self.model(activations)
+
+        feature_idxs = torch.nonzero(z[token_position] != 0, as_tuple=False).squeeze(-1)
+        return feature_idxs
     
     @torch.no_grad()
-    def intervene_feature(self, example, feature, alpha) -> tuple:
+    def intervene_feature(
+            self, 
+            activations, 
+            feature: int, 
+            alpha: float = 2.0,
+            token_positions: int | list[int] | None = None
+        ) -> tuple:
         """Encodes an example, intervenes a given feature from the learned 
         sparse latent space, and returns the decoded and original
         tensors.
         """
-        if type(example) != torch.Tensor:
-            example = torch.Tensor(example).unsqueeze(0)
-        _, z, _ = self.model(example)
+        if not isinstance(activations, torch.Tensor):
+            activations = torch.Tensor(activations).unsqueeze(0)
+        
+        activations = activations.to(self.device)
+        _, z, _ = self.model(activations)
         modified = z.clone()
-        modified[:, feature] *= alpha
+    
+        if token_positions is None:
+            modified[:, feature] *= alpha
+        elif isinstance(token_positions, int):
+            modified[token_positions, feature] *= alpha
+        else:
+            for pos in token_positions:
+                modified[pos, feature] *= alpha
+        
         modified = self.model.decode(modified)
         original = self.model.decode(z)
         return original, modified
