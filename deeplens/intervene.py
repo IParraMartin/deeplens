@@ -4,12 +4,22 @@ import warnings
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 
 import torch
 from deeplens.sae import SparseAutoencoder
 
 warnings.filterwarnings('ignore')
+
+
+def get_device(device: str = "auto") -> torch.device:
+    if device == "auto":
+        return torch.device(
+            "cuda" if torch.cuda.is_available() 
+            else "mps" if torch.backends.mps.is_available()
+            else "cpu"
+        )
+    return torch.device(device)
 
 
 class InterveneFeatures():
@@ -28,14 +38,7 @@ class InterveneFeatures():
         """
         self.model_dir = sae_model
 
-        if device == "auto":
-            self.device = torch.device(
-                "cuda" if torch.cuda.is_available() 
-                else "mps" if torch.backends.mps.is_available()
-                else "cpu"
-            )
-        else:
-            self.device = torch.device(device)
+        self.device = get_device(device)
         print(f"Running on device: {self.device}")
 
         if str(sae_config).endswith(".yaml"):
@@ -109,12 +112,52 @@ class InterveneFeatures():
     
 
 class ReinjectSingleSample():
-    def __init__(self, hf_model, features):
-        self.model = AutoModel.from_pretrained(hf_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
-
-    @torch.no_grad()
-    def reinject_features(features, model):
-        """Injects the modified features to the respective layer of the model
+    def __init__(self, hf_model: str, device: str = "auto"):
+        """Reinjects the modified activations and generates text
+        for causal inference
         """
-        pass
+        self.device = get_device(device)
+        print(f"Running on device: {self.device}")
+        
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model).to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        self.model.eval()
+        
+    @torch.no_grad()
+    def reinject_and_generate(
+            self, 
+            text, 
+            modified_activations, 
+            layer: int = 3, 
+            generate: bool = False, 
+            max_new_tokens: int = 25, 
+            temperature: float = 1.0
+        ):
+        """Injects the modified features to the respective layer of the model.
+        """
+        modified_activations = modified_activations.to(self.device)
+        call_count = [0]
+        def replacement_hook(module, input, output):
+            if generate and call_count[0] > 0:
+                return output
+            call_count[0] += 1
+            return modified_activations
+        
+        hook = self.model.h[layer].mlp.act.register_forward_hook(replacement_hook)
+        tokens = self.tokenizer(text, return_tensors='pt').to(self.device)
+        try:
+            if generate:
+                generated_ids = self.model.generate(
+                    **tokens,
+                    max_new_tokens=max_new_tokens,
+                    temperature=temperature,
+                    do_sample=temperature > 0
+                )
+                return self.tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+            else:
+                out = self.model(**tokens)
+                return out.logits
+        finally:
+            hook.remove()
+
+
