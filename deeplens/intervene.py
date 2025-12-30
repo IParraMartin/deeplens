@@ -26,7 +26,7 @@ class InterveneFeatures():
     def __init__(
             self,
             sae_model: str = None,
-            sae_config: dict = None,
+            sae_config: str | dict = None,
             device: str = "auto"
         ):
         """Class to intervene features of the autoencoder's latent
@@ -41,12 +41,12 @@ class InterveneFeatures():
         self.device = get_device(device)
         print(f"Running on device: {self.device}")
 
-        if str(sae_config).endswith(".yaml"):
-            self.model_config = self.config_from_yaml(sae_config)
-        elif type(sae_config) == dict:
+        if isinstance(sae_config, dict):
             self.model_config = sae_config
+        elif isinstance(sae_config, str) and sae_config.endswith(".yaml"):
+            self.model_config = self.config_from_yaml(sae_config)
         else:
-            raise ValueError("sae_config must be dict or path to .yaml file")
+            raise ValueError("sae_config must be dict or path to .yaml file.")
         
         self.model = self.load_model()
 
@@ -70,7 +70,7 @@ class InterveneFeatures():
             feature: int, 
             alpha: float = 2.0,
             token_positions: int | list[int] | None = None
-        ) -> tuple:
+        ) -> tuple[torch.Tensor, torch.Tensor]:
         """Encodes an example, intervenes a given feature from the learned 
         sparse latent space, and returns the decoded and original
         tensors.
@@ -106,9 +106,14 @@ class InterveneFeatures():
         """Returns a sparse autoencoder configuration
         from a yaml file
         """
-        with open(file, "r") as f:
-            config = yaml.safe_load(f)
-        return config
+        try:
+            with open(file, "r") as f:
+                config = yaml.safe_load(f)
+            return config
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Config file not found: {file}")
+        except yaml.YAMLError as e:
+            raise ValueError(f"Invalid YAML in {file}: {e}")
     
 
 class ReinjectSingleSample():
@@ -132,7 +137,7 @@ class ReinjectSingleSample():
             generate: bool = False, 
             max_new_tokens: int = 25, 
             temperature: float = 1.0
-        ):
+        ) -> torch.Tensor | str:
         """Injects the modified features to the respective layer of the model.
         """
         modified_activations = modified_activations.to(self.device)
