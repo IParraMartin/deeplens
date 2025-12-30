@@ -6,11 +6,16 @@ import torch
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 
 warnings.filterwarnings('ignore')
 
+
+__all__ = [
+    "FromHuggingFace",
+    "ExtractSingleSample"
+]
 
 def get_device(device: str = "auto") -> torch.device:
     if device == "auto":
@@ -20,7 +25,6 @@ def get_device(device: str = "auto") -> torch.device:
             else "cpu"
         )
     return torch.device(device)
-
 
 class FromHuggingFace():
     def __init__(
@@ -35,7 +39,7 @@ class FromHuggingFace():
             save_features: bool = True
         ):
 
-        self.model = AutoModel.from_pretrained(model)
+        self.model = AutoModelForCausalLM.from_pretrained(model)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
@@ -139,7 +143,7 @@ class ExtractSingleSample():
             max_length (int, optional): _description_. Defaults to 1024.
             device (str, optional): _description_. Defaults to "auto".
         """
-        self.model = AutoModel.from_pretrained(model)
+        self.model = AutoModelForCausalLM.from_pretrained(model)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.layer = layer
         self.max_length = max_length

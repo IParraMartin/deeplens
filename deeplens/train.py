@@ -11,6 +11,10 @@ import numpy as np
 import wandb
 
 
+__all__ = [
+    "SAETrainer"
+]
+
 class SAETrainer():
     def __init__(
             self, 
