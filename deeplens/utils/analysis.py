@@ -25,7 +25,8 @@ def plot_topk_distribution(
         tokenizer_name: str = "gpt2", 
         position: int = 0, 
         save_name: str = None, 
-        use_softmax: bool = False
+        use_softmax: bool = False,
+        title: str = None
     ):
     """Plot bar chart of top-k token predictions at a specific position
     """
@@ -49,7 +50,7 @@ def plot_topk_distribution(
     plt.xlabel('Token', fontsize=14)
     ylabel = r'$P$(token)' if use_softmax else 'Logit Value'
     plt.ylabel(ylabel, fontsize=14)
-    plt.title(f'Top-{k} Token Predictions (Position {position})', fontsize=16)
+    plt.title(title, fontsize=16)
     plt.tight_layout()
     
     if save_name is not None:
