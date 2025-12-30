@@ -81,9 +81,9 @@ class InterveneFeatures():
             for pos in token_positions:
                 modified[pos, feature] *= alpha
         
-        modified = self.model.decode(modified)
-        original = self.model.decode(z)
-        return original, modified
+        original_decoded = self.model.decode(z)
+        modified_decoded = self.model.decode(modified)
+        return activations, original_decoded, modified_decoded
 
     def load_model(self) -> torch.nn.Module:
         """Loads the sparse autoencoder
