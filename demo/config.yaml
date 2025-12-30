@@ -1,0 +1,8 @@
+input_dims: 3072
+n_features: 24576
+activation: 'relu'
+input_norm: True
+k: 768
+beta_l1: None
+tie_weights: False
+unit_norm_decoder: True
