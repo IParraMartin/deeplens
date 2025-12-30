@@ -11,24 +11,28 @@ class SparseAutoencoder(nn.Module):
             activation: str = "relu",
             input_norm: bool = True,
             k: int | None = None,
+            beta_l1: float | None = None,
             tie_weights: bool = False,
             unit_norm_decoder: bool = True
         ) -> None:
-        """_summary_
+        """Sparse Autoencoder for learning interpretable features.
 
         Args:
-            input_dims (int, optional): _description_. Defaults to 512.
-            n_features (int, optional): _description_. Defaults to 2048.
-            activation (str, optional): _description_. Defaults to "relu".
-            input_norm (bool, optional): _description_. Defaults to True.
-            k (int | None, optional): _description_. Defaults to None.
-            tie_weights (bool, optional): _description_. Defaults to False.
-            unit_norm_decoder (bool, optional): _description_. Defaults to True.
+            input_dims (int): Input dimension (e.g., 3072 for GPT-2 MLP).
+            n_features (int): Number of SAE features (expansion factor * input_dims).
+            activation (str): Activation function ('relu' or 'silu').
+            input_norm (bool): Whether to apply LayerNorm to inputs.
+            k (int | None): If set, use top-k sparsity instead of L1.
+            beta_l1 (float): L1 sparsity coefficient (ignored if k is set).
+            tie_weights (bool): Whether to tie encoder and decoder weights.
+            unit_norm_decoder (bool): Whether to normalize decoder weights to unit norm.
         """
         super().__init__()
         self.norm = nn.LayerNorm(input_dims) if input_norm else nn.Identity()
         self.encoder = nn.Linear(input_dims, n_features, bias=True)
         self.decoder = None if tie_weights else nn.Linear(n_features, input_dims, bias=False)
+        self.unit_norm_decoder = unit_norm_decoder
+        self.input_norm = input_norm
 
         if activation == "relu":
             self.activation = nn.ReLU()
@@ -46,8 +50,8 @@ class SparseAutoencoder(nn.Module):
                 self._renorm_decoder()
 
         self.k = k
+        self.beta_l1 = beta_l1
         self.tie_weights = tie_weights
-        self.unit_norm_decoder = unit_norm_decoder
 
     @torch.no_grad()
     def _renorm_decoder(self, eps: float = 1e-8) -> None:
@@ -85,14 +89,14 @@ class SparseAutoencoder(nn.Module):
         x_hat = self.decode(z)
         return x_hat, z, z_pre
 
-    def loss(self, x: torch.Tensor, beta_l1: float = 1e-3) -> tuple[torch.Tensor, dict]:
+    def loss(self, x: torch.Tensor) -> tuple[torch.Tensor, dict]:
         """Loss computation with logs to print.
         """
         x_hat, z, _ = self.forward(x)
         recon = F.mse_loss(x_hat, x)
         if self.k is None:
             sparsity = z.abs().mean()
-            total = recon + beta_l1 * sparsity
+            total = recon + self.beta_l1 * sparsity
             logs = {
                 "mse": recon.detach(),
                 "l1": sparsity.detach(),

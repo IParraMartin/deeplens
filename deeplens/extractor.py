@@ -9,6 +9,8 @@ os.environ["HF_HOME"] = "cache"
 from transformers import AutoModel, AutoTokenizer
 from datasets import load_dataset
 
+from deeplens.utils.tools import get_device, get_mlp_module
+
 warnings.filterwarnings('ignore')
 
 
@@ -40,16 +42,8 @@ class FromHuggingFace():
             streaming=True
         ).take(num_samples)
 
-        if device == "auto":
-            self.device = torch.device(
-                "cuda" if torch.cuda.is_available() 
-                else "mps" if torch.backends.mps.is_available()
-                else "cpu"
-            )
-        else:
-            self.device = torch.device(device)
-        
-        print(f"Using device: {self.device}")
+        self.device = get_device(device)
+        print(f"Running on device: {self.device}")
         
         self.model.to(self.device)
         self.model.eval()
@@ -81,7 +75,7 @@ class FromHuggingFace():
         hook, activations = self.get_activations(self.layer)
         all_activations = []
         batch_texts = []     
-        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}:", total=self.num_samples):
+        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
             batch_texts.append(example['text'])
             if len(batch_texts) == self.batch_size:
                 tokens = self.tokenize({'text': batch_texts})
@@ -121,29 +115,37 @@ class FromHuggingFace():
         return features
 
 class ExtractSingleSample():
-    def __init__(self, model, sample, layer, max_length, device):
+    def __init__(
+            self, 
+            model: str = "gpt2", 
+            layer: int = 3, 
+            max_length: int = 1024, 
+            device: str = "auto"
+        ):
+        """_summary_
+
+        Args:
+            model (str, optional): _description_. Defaults to "gpt2".
+            sample (str, optional): _description_. Defaults to None.
+            layer (int, optional): _description_. Defaults to 3.
+            max_length (int, optional): _description_. Defaults to 1024.
+            device (str, optional): _description_. Defaults to "auto".
+        """
         self.model = AutoModel.from_pretrained(model)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
-        self.sample = sample
         self.layer = layer
         self.max_length = max_length
 
-        if device == "auto":
-            self.device = torch.device(
-                "cuda" if torch.cuda.is_available() 
-                else "mps" if torch.backends.mps.is_available()
-                else "cpu"
-            )
-        else:
-            self.device = torch.device(device)
+        self.device = get_device(device)
+        print(f"Running on device: {self.device}")
         
         self.model.to(self.device)
         self.model.eval()
 
     @torch.no_grad()
-    def get_mlp_acts(self):
+    def get_mlp_acts(self, sample):
         hook, activations = self.get_activations(self.layer)
-        tokens = self.tokenize(self.sample)
+        tokens = self.tokenize(sample)
         _ = self.model(**tokens)
         acts = activations[-1].squeeze()
         hook.remove()

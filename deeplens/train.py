@@ -27,6 +27,7 @@ class SAETrainer():
             grad_clip_norm: float = None,
             lrs_type: str = None,
             eval_steps: int = 5000,
+            warmup_fraction: float = 0.1,
             save_best_only: bool = True,
             log_to_wandb: bool = True
         ) -> None:
@@ -60,6 +61,7 @@ class SAETrainer():
         self.save_checkpoints = save_checkpoints
         self.grad_clip_norm = grad_clip_norm
         self.eval_steps = eval_steps
+        self.warmup_fraction = warmup_fraction
         self.save_best_only = save_best_only
         self.log_wandb = log_to_wandb
 
@@ -84,8 +86,18 @@ class SAETrainer():
                 project=f"sparse-autoencoder",
                 name=f"run-{self.model_name}-{time}",
                 config={
-                    "epochs": epochs, 
+                    "epochs": epochs,
+                    "in_dims": self.model.encoder.in_features,
+                    "sparse_dims": self.model.encoder.out_features,
+                    "activations": self.model.activation,
+                    "input_norm": self.model.input_norm,
+                    "top_k": self.model.k, 
+                    "l1": self.model.beta_l1,
+                    "tie_weights": self.model.tie_weights,
+                    "unit_norm_decoder": self.model.unit_norm_decoder,
+                    "lr": optim.param_groups[0]['lr'],
                     "lr_scheduler": lrs_type,
+                    "warmup_fraction": warmup_fraction,
                     "seed": random_seed,
                     "grad_clip_norm": grad_clip_norm,
                     "bf16": bf16
@@ -295,7 +307,7 @@ class SAETrainer():
         assert lr_type in ['cosine', 'plateau', 'linear'], "Use 'cosine', 'plateau', or 'linear'"
 
         total_steps = self.epochs * len(self.train_dataloader)
-        warmup_steps = int(total_steps * 0.05)
+        warmup_steps = int(total_steps * self.warmup_fraction)
         
         if lr_type == 'cosine':
             warmup = lr_scheduler.LinearLR(
