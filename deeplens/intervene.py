@@ -12,6 +12,11 @@ from deeplens.sae import SparseAutoencoder
 warnings.filterwarnings('ignore')
 
 
+__all__ = [
+    "InterveneFeatures",
+    "ReinjectSingleSample"
+]
+
 def get_device(device: str = "auto") -> torch.device:
     if device == "auto":
         return torch.device(
