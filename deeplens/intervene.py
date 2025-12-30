@@ -13,19 +13,38 @@ from deeplens.utils.tools import get_device, get_mlp_module
 warnings.filterwarnings('ignore')
 
 
+__all__ = [
+    "InterveneFeatures",
+    "ReinjectSingleSample"
+]
+
+
 class InterveneFeatures():
+    """Manipulate and intervene on sparse autoencoder latent features.
+
+    This class loads a trained sparse autoencoder and provides methods to analyze
+    and modify its latent feature space, enabling causal analysis of feature effects
+    on model behavior.
+    """
     def __init__(
             self,
             sae_model: str = None,
             sae_config: str | dict = None,
             device: str = "auto"
         ):
-        """Class to intervene features of the autoencoder's latent
-        features
+        """Initialize the InterveneFeatures class for manipulating sparse autoencoder latent features.
+
+        This class provides functionality to load a trained sparse autoencoder model and
+        intervene on its latent feature space to analyze and modify activations.
 
         Args:
-            model_dir (str, optional): _description_. Defaults to None.
-            model_config (dict, optional): _description_. Defaults to None.
+            sae_model (str, optional): Path to the trained sparse autoencoder model weights file.
+                Should be a .pt or .pth file containing the model state dict. Defaults to None.
+            sae_config (str | dict, optional): Configuration for the sparse autoencoder.
+                Can be either a dictionary containing model hyperparameters or a path to a
+                YAML configuration file. Defaults to None.
+            device (str, optional): Device to run computations on. Can be "auto" for automatic
+                selection, "cuda" for GPU, or "cpu" for CPU. Defaults to "auto".
         """
         self.model_dir = sae_model
 
@@ -43,8 +62,20 @@ class InterveneFeatures():
 
     @torch.no_grad()
     def get_alive_features(self, activations, token_position: int = -1) -> torch.Tensor:
-        """Returns non-zero features of the latent space for a given token
-        in a sequence
+        """Get indices of non-zero (active) features in the latent space for a specific token.
+
+        Encodes the input activations through the sparse autoencoder and identifies which
+        latent features are active (non-zero) at the specified token position.
+
+        Args:
+            activations (torch.Tensor | array-like): Input activations to encode. Can be a
+                PyTorch tensor or any array-like structure that can be converted to a tensor.
+            token_position (int, optional): Position of the token in the sequence to analyze.
+                Use -1 for the last token. Defaults to -1.
+
+        Returns:
+            torch.Tensor: A 1D tensor containing the indices of non-zero features in the
+                latent space at the specified token position.
         """
         if not isinstance(activations, torch.Tensor):
             activations = torch.Tensor(activations)
@@ -61,10 +92,28 @@ class InterveneFeatures():
             feature: int, 
             alpha: float = 2.0,
             token_positions: int | list[int] | None = None
-        ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Encodes an example, intervenes a given feature from the learned 
-        sparse latent space, and returns the decoded and original
-        tensors.
+        ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Intervene on a specific latent feature by scaling its activation.
+
+        Encodes the input activations, multiplies the specified feature by alpha at the
+        given token positions, and returns both the original and modified decoded outputs
+        for comparison.
+
+        Args:
+            activations (torch.Tensor | array-like): Input activations to encode and modify.
+                Can be a PyTorch tensor or any array-like structure.
+            feature (int): Index of the latent feature to intervene on.
+            alpha (float, optional): Scaling factor to apply to the feature. Values > 1
+                amplify the feature, values < 1 suppress it. Defaults to 2.0.
+            token_positions (int | list[int] | None, optional): Token position(s) at which
+                to apply the intervention. If None, applies to all tokens. If int, applies
+                to a single position. If list, applies to multiple positions. Defaults to None.
+
+        Returns:
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A tuple containing:
+                - activations: The original input activations
+                - original_decoded: Decoded output without intervention
+                - modified_decoded: Decoded output with the feature intervention applied
         """
         if not isinstance(activations, torch.Tensor):
             activations = torch.Tensor(activations).unsqueeze(0)
@@ -86,7 +135,14 @@ class InterveneFeatures():
         return activations, original_decoded, modified_decoded
 
     def load_model(self) -> torch.nn.Module:
-        """Loads the sparse autoencoder
+        """Load the sparse autoencoder model from disk.
+
+        Loads the model weights from the specified path and initializes a
+        SparseAutoencoder instance with the provided configuration.
+
+        Returns:
+            torch.nn.Module: The loaded sparse autoencoder model moved to the
+                appropriate device.
         """
         weights = torch.load(self.model_dir, map_location=self.device)
         model = SparseAutoencoder(**self.model_config)
@@ -94,8 +150,16 @@ class InterveneFeatures():
         return model.to(self.device)
     
     def config_from_yaml(self, file) -> dict:
-        """Returns a sparse autoencoder configuration
-        from a yaml file
+        """Load sparse autoencoder configuration from a YAML file.
+
+        Reads and parses a YAML configuration file containing the hyperparameters
+        for the sparse autoencoder model.
+
+        Args:
+            file (str): Path to the YAML configuration file.
+
+        Returns:
+            dict: Dictionary containing the model configuration parameters.
         """
         try:
             with open(file, "r") as f:
@@ -108,9 +172,25 @@ class InterveneFeatures():
     
 
 class ReinjectSingleSample():
+    """Reinject modified activations into a language model for causal inference.
+
+    This class enables injecting modified activations back into a transformer model's
+    forward pass to observe the causal effects on model predictions and generated text.
+    Useful for validating feature interventions and conducting mechanistic interpretability
+    experiments.
+    """
     def __init__(self, hf_model: str, device: str = "auto"):
-        """Reinjects the modified activations and generates text
-        for causal inference
+        """Initialize the ReinjectSingleSample class for causal inference with modified activations.
+
+        Loads a HuggingFace causal language model and tokenizer to enable reinjection of
+        modified activations into the model's forward pass for text generation and analysis.
+
+        Args:
+            hf_model (str): Name or path of the HuggingFace model to load.
+                Should be a valid model identifier from the HuggingFace model hub
+                (e.g., "gpt2", "meta-llama/Llama-2-7b").
+            device (str, optional): Device to run computations on. Can be "auto" for automatic
+                selection, "cuda" for GPU, or "cpu" for CPU. Defaults to "auto".
         """
         self.device = get_device(device)
         print(f"Running on device: {self.device}")
@@ -129,7 +209,34 @@ class ReinjectSingleSample():
             max_new_tokens: int = 25, 
             temperature: float = 1.0
         ) -> torch.Tensor | str:
-        """Injects the modified features to the respective layer of the model.
+        """Reinject modified activations into a model layer and optionally generate text.
+
+        Replaces the activations at the specified layer with the provided modified activations
+        during the forward pass. Can either return logits for the input text or generate
+        new tokens autoregressively.
+
+        Args:
+            text (str): Input text to tokenize and process through the model.
+            modified_activations (torch.Tensor): The modified activations to inject at the
+                specified layer. Should have the appropriate shape for the layer's output.
+            layer (int, optional): Index of the transformer layer where activations should
+                be replaced. Defaults to 3.
+            generate (bool, optional): If True, generates new tokens autoregressively.
+                If False, only returns logits for the input. Defaults to False.
+            max_new_tokens (int, optional): Maximum number of new tokens to generate when
+                generate=True. Defaults to 25.
+            temperature (float, optional): Sampling temperature for generation. Higher values
+                (>1.0) make output more random, lower values (<1.0) more deterministic.
+                Set to 0 for greedy decoding. Defaults to 1.0.
+
+        Returns:
+            torch.Tensor | str: If generate=False, returns the model's logits as a tensor.
+                If generate=True, returns the generated text as a string.
+
+        Note:
+            The hook is automatically removed after execution to prevent interference
+            with subsequent forward passes. For generation mode, the hook only affects
+            the first forward pass to avoid applying the intervention to newly generated tokens.
         """
         modified_activations = modified_activations.to(self.device)
         call_count = [0]
@@ -155,5 +262,3 @@ class ReinjectSingleSample():
                 return out.logits
         finally:
             hook.remove()
-
-
