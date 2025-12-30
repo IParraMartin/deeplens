@@ -12,6 +12,16 @@ from datasets import load_dataset
 warnings.filterwarnings('ignore')
 
 
+def get_device(device: str = "auto") -> torch.device:
+    if device == "auto":
+        return torch.device(
+            "cuda" if torch.cuda.is_available() 
+            else "mps" if torch.backends.mps.is_available()
+            else "cpu"
+        )
+    return torch.device(device)
+
+
 class FromHuggingFace():
     def __init__(
             self, 
@@ -40,16 +50,8 @@ class FromHuggingFace():
             streaming=True
         ).take(num_samples)
 
-        if device == "auto":
-            self.device = torch.device(
-                "cuda" if torch.cuda.is_available() 
-                else "mps" if torch.backends.mps.is_available()
-                else "cpu"
-            )
-        else:
-            self.device = torch.device(device)
-        
-        print(f"Using device: {self.device}")
+        self.device = get_device(device)
+        print(f"Running on device: {self.device}")
         
         self.model.to(self.device)
         self.model.eval()
@@ -142,14 +144,8 @@ class ExtractSingleSample():
         self.layer = layer
         self.max_length = max_length
 
-        if device == "auto":
-            self.device = torch.device(
-                "cuda" if torch.cuda.is_available() 
-                else "mps" if torch.backends.mps.is_available()
-                else "cpu"
-            )
-        else:
-            self.device = torch.device(device)
+        self.device = get_device(device)
+        print(f"Running on device: {self.device}")
         
         self.model.to(self.device)
         self.model.eval()
