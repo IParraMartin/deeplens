@@ -16,6 +16,15 @@ __all__ = [
 ]
 
 
+__all__ = [
+    "SAETrainer"
+]
+
+
+__all__ = [
+    "SAETrainer"
+]
+
 class SAETrainer():
     """Training framework for Sparse Autoencoders with comprehensive logging and checkpointing.
 
