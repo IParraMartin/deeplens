@@ -8,18 +8,9 @@ from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 
 import torch
 from deeplens.sae import SparseAutoencoder
+from deeplens.utils.tools import get_device, get_mlp_module
 
 warnings.filterwarnings('ignore')
-
-
-def get_device(device: str = "auto") -> torch.device:
-    if device == "auto":
-        return torch.device(
-            "cuda" if torch.cuda.is_available() 
-            else "mps" if torch.backends.mps.is_available()
-            else "cpu"
-        )
-    return torch.device(device)
 
 
 class InterveneFeatures():

@@ -9,17 +9,9 @@ os.environ["HF_HOME"] = "cache"
 from transformers import AutoModel, AutoTokenizer
 from datasets import load_dataset
 
+from deeplens.utils.tools import get_device, get_mlp_module
+
 warnings.filterwarnings('ignore')
-
-
-def get_device(device: str = "auto") -> torch.device:
-    if device == "auto":
-        return torch.device(
-            "cuda" if torch.cuda.is_available() 
-            else "mps" if torch.backends.mps.is_available()
-            else "cpu"
-        )
-    return torch.device(device)
 
 
 class FromHuggingFace():
