@@ -139,7 +139,7 @@ class ReinjectSingleSample():
             call_count[0] += 1
             return modified_activations
         
-        hook = self.model.h[layer].mlp.act.register_forward_hook(replacement_hook)
+        hook = self.model.transformer.h[layer].mlp.act.register_forward_hook(replacement_hook)
         tokens = self.tokenizer(text, return_tensors='pt').to(self.device)
         try:
             if generate:
