@@ -127,7 +127,10 @@ class FromHuggingFace():
         activations = []
         def hook_fn(module, input, output):
             activations.append(output.detach().cpu())
-        hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        if hasattr(self.model, "transformer"):
+            hook = self.model.transformer.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        else:
+            hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
         return hook, activations
 
     @torch.no_grad()
@@ -310,4 +313,3 @@ class ExtractSingleSample():
         else:
             hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
         return hook, activations
-
