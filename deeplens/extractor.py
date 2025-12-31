@@ -6,7 +6,7 @@ import torch
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 
 from deeplens.utils.tools import get_device, get_mlp_module
@@ -65,7 +65,7 @@ class FromHuggingFace():
                 the 'saved_features' directory. Defaults to True.
         """
 
-        self.model = AutoModel.from_pretrained(model)
+        self.model = AutoModelForCausalLM.from_pretrained(model)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
@@ -227,7 +227,7 @@ class ExtractSingleSample():
             device (str, optional): Device for model inference. Can be "auto" for automatic
                 selection, "cuda", "mps", or "cpu". Defaults to "auto".
         """
-        self.model = AutoModel.from_pretrained(model)
+        self.model = AutoModelForCausalLM.from_pretrained(model)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.layer = layer
         self.max_length = max_length

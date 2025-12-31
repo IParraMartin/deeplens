@@ -5,10 +5,22 @@ __DeepLens__ is a library for mechanistic interpretability. It includes a full s
 
 ## Quick How To
 ### Installation
-Install the requirements file `` and the recommended Pytorch CUDA versions:
+Before installing any dependency, I recommend creating a new virtual envoronment to avoid library conflicts.
+```
+conda create -n deeplens python=3.11
+conda activate deeplens
+```
+
+The following command should install the necessary dependencies and tools:
+```
+pip install -e .
+```
+
+If any errors arise, you may alternatively use the manual installation:
 ```
 pip install -r requirements.txt
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip install -e .
 ```
 
 ### 1. MLP Feature Extraction
@@ -37,7 +49,7 @@ from deeplens.utils.dataset import ActivationsDatasetBuilder
 import torch
 
 dataset = ActivationsDatasetBuilder(
-    activations="saved_features/features_layer_3_1171436.pt",
+    activations="YOUR_SAVED_FEATURES_PT_FILE",
     splits=[0.8, 0.2],
     batch_size=16,
     norm=True
@@ -56,18 +68,18 @@ optimizer = torch.optim.Adam(
 
 trainer = SAETrainer(
     model=model,
-    model_name="gpt2L3-untied",
+    model_name="YOUR_GIVEN_MODEL_NAME",
     train_dataloader=train,
     eval_dataloader=eval,
     optim=optimizer,
-    epochs=10,
-    bf16=False,
+    epochs=3,
+    bf16=True,
     random_seed=42,
     save_checkpoints=True,
     device="auto",
     grad_clip_norm=3.0,
     lrs_type='cosine',
-    eval_steps=5000,
+    eval_steps=1000,
     warmup_fraction=0.1,
     save_best_only=True,
     log_to_wandb=True
