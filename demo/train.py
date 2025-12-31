@@ -4,7 +4,7 @@ from deeplens.utils.dataset import ActivationsDatasetBuilder
 import torch
 
 dataset = ActivationsDatasetBuilder(
-    activations="saved_features/features_layer_3_2349476.pt",
+    activations="saved_features/features_layer_3_1171436.pt",
     splits=[0.8, 0.2],
     batch_size=16,
     norm=True
