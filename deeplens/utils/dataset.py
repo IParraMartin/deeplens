@@ -6,6 +6,7 @@ import torch
 import pandas as pd
 import os
 
+from torch.utils.data import DistributedSampler
 
 __all__ = [
     "AudioDatasetBuilder",
@@ -348,11 +349,15 @@ class ActivationsDatasetBuilder():
         """
         return ActivationsDataset(self.activations)
 
-    def get_dataloaders(self) -> tuple[DataLoader, DataLoader]:
+    def get_dataloaders(self, ddp: bool = False) -> tuple[DataLoader, DataLoader]:
         """Create train and validation DataLoaders from the activations.
 
         Splits the dataset according to the specified proportions and creates two DataLoaders
         with appropriate settings for training and evaluation.
+
+        Args:
+            ddp (bool, optional): Turn to True if Distributed Data Parallel (DDP) training is
+                intended. Defaults to False.
 
         Returns:
             tuple: A tuple containing (train_loader, eval_loader).
@@ -361,8 +366,20 @@ class ActivationsDatasetBuilder():
         """
         data = self.set_tensor_dataset()
         train, eval = random_split(data, lengths=self.splits)
-        train_loader = DataLoader(train, batch_size=self.batch_size, shuffle=True)
-        eval_loader = DataLoader(eval, batch_size=self.batch_size, shuffle=False)
+        train_loader = DataLoader(
+            train, 
+            batch_size=self.batch_size, 
+            shuffle=not ddp, 
+            pin_memory=True,
+            sampler=DistributedSampler(train, shuffle=True) if ddp else None
+        )
+        eval_loader = DataLoader(
+            eval, 
+            batch_size=self.batch_size, 
+            shuffle=False, 
+            pin_memory=True, 
+            sampler=DistributedSampler(eval, shuffle=False) if ddp else None
+        )
         return train_loader, eval_loader
 
     @torch.no_grad()

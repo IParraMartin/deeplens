@@ -310,4 +310,3 @@ class ExtractSingleSample():
         else:
             hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
         return hook, activations
-

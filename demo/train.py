@@ -9,7 +9,7 @@ dataset = ActivationsDatasetBuilder(
     batch_size=16,
     norm=True
 )
-train, eval = dataset.get_dataloaders()
+train, eval = dataset.get_dataloaders(ddp=False)
 
 config = SAETrainer.config_from_yaml('demo/config.yaml')
 model = SparseAutoencoder(**config)
