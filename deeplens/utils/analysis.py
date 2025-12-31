@@ -122,8 +122,9 @@ def plot_topk_distribution(
 def get_top_k_tokens(
         logits: torch.Tensor, 
         k: int = 10, 
-        tokenizer: str = None
-    ) -> None:
+        tokenizer: str = None,
+        verbose: bool = False
+    ) -> dict:
     """Print the top-k predicted tokens and their logit values for each position in a sequence.
 
     Iterates through all positions in the sequence and prints the k highest-scoring tokens
@@ -139,9 +140,11 @@ def get_top_k_tokens(
             for decoding token IDs into readable strings. If None, only token IDs and
             logit values are displayed without decoded text. Should match the tokenizer
             used during model training. Defaults to None.
+        verbose (bool, optional): If True, prints the results to the console. Defaults
+            to False. 
 
     Returns:
-        None: Prints the top-k predictions to stdout.
+        dict: Dictionary mapping position indices to their top-k predictions.
 
     Example Output:
         Top-10 predicted tokens per position
@@ -155,14 +158,42 @@ def get_top_k_tokens(
         logits = logits.squeeze().detach().cpu().numpy()
     if tokenizer is not None:
         tokenizer = AutoTokenizer.from_pretrained(tokenizer)
-    print(f"Top-{k} predicted tokens per position")
+    if verbose:
+        print(f"Top-{k} predicted tokens per position")
+
+    exp_logits = np.exp(logits - np.max(logits))
+    logits = exp_logits / np.sum(exp_logits)
+
+    results = {}
     for pos in range(logits.shape[0]):
         top_idx = np.argsort(logits[pos])[-k:][::-1]
         top_vals = logits[pos][top_idx]
-        print(f'\nPosition {pos}:')
+        if verbose:
+            print(f'\nPosition {pos}:')
+        tokens = []
         for idx, val in zip(top_idx, top_vals):
             if tokenizer is not None:
                 token = tokenizer.decode([idx])
-                print(f"\tToken {idx} ('{token}'): {val:.2f}")
+                tokens.append(token)
+                if verbose:
+                    print(f"\t'{token}': {val:.2f}")
             else:
-                print(f"\tToken {idx}: {val:.2f}")
+                if verbose:
+                    print(f"\tToken {idx}: {val:.2f}")
+        
+        results[pos] = {
+            'tokens': tokens,
+            'values': top_vals.tolist()
+        }
+
+    out = []
+    for position, data in results.items():
+        for i, (token, prob) in enumerate(zip(data['tokens'], data['values'])):
+            out.append({
+                'position': position,
+                'rank': i + 1,
+                'token': token,
+                'probability': prob
+            })
+
+    return out
