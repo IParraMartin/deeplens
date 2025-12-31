@@ -7,7 +7,11 @@ name = "deeplens"
 version = "0.1.0"
 description = "A library to train and use Sparse Autoencoders for mechanistic interpretability"
 authors = [{name = "Iñigo Parra", email = "iparra@berkeley.edu"}]
-dependencies = ["numpy", "pandas", "PyYAML", "transformers", "scikit_learn", "tqdm"]
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools]
-packages = ["deeplens", "deeplens.utils"]
+packages = {find = {}}
