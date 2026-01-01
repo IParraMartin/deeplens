@@ -14,6 +14,7 @@ conda activate deeplens
 The following command should install the necessary dependencies and tools:
 ```
 pip install -e .
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 ```
 
 If any errors arise, you may alternatively use the manual installation:
