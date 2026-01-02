@@ -1,9 +1,6 @@
 import torch
 
 def get_device(device: str = "auto") -> torch.device:
-    """Get the device in which to process run the Pytorch
-    operations
-    """
     if device == "auto":
         return torch.device(
             "cuda" if torch.cuda.is_available() 
@@ -12,7 +9,7 @@ def get_device(device: str = "auto") -> torch.device:
         )
     return torch.device(device)
 
-def get_mlp_module():
+def get_mlp_module(hf_model: str):
     """Access the correct MLP module of a given model architecture
     """
     pass

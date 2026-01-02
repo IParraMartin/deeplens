@@ -1,4 +1,4 @@
-![DeepLens](resources/header.png)
+![DeepLens](docs/assets/header.png)
 
 ## Overview
 __DeepLens__ is a library for mechanistic interpretability. It includes a full set of tools that allow end-to-end interpretability pipelines: from feature extraction, to feature steering. The library includes Sparse Autoencoders (TopK and L1), feature extractors, feature dataset modules, and intervention modules. 

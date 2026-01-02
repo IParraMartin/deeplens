@@ -1,13 +1,13 @@
 import os
 import warnings
-from tqdm import tqdm
-
-import torch
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
+
+from tqdm import tqdm
+import torch
 
 from deeplens.utils.tools import get_device, get_mlp_module
 
