@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
+from deeplens.extractor import ExtractSingleSample
 
 __all__ = [
     "generate_feature_heatmap",

@@ -61,7 +61,12 @@ class InterveneFeatures():
         self.model = self.load_model()
 
     @torch.no_grad()
-    def get_alive_features(self, activations, token_position: int = -1) -> torch.Tensor:
+    def get_alive_features(
+            self, 
+            activations: torch.Tensor, 
+            token_position: int = -1, 
+            k: int | None = None
+        ) -> torch.Tensor:
         """Get indices of non-zero (active) features in the latent space for a specific token.
 
         Encodes the input activations through the sparse autoencoder and identifies which
@@ -72,6 +77,8 @@ class InterveneFeatures():
                 PyTorch tensor or any array-like structure that can be converted to a tensor.
             token_position (int, optional): Position of the token in the sequence to analyze.
                 Use -1 for the last token. Defaults to -1.
+            k (int, optional): If provided, returns only the top-k most active features
+                instead of all non-zero features. Defaults to None.
 
         Returns:
             torch.Tensor: A 1D tensor containing the indices of non-zero features in the
@@ -82,7 +89,11 @@ class InterveneFeatures():
         activations = activations.to(self.device)
         _, z, _ = self.model(activations)
 
-        feature_idxs = torch.nonzero(z[token_position] != 0, as_tuple=False).squeeze(-1)
+        z_token = z[token_position]
+        if k is not None:
+            feature_idxs = torch.topk(z_token, k=k).indices
+        else:
+            feature_idxs = torch.nonzero(z_token != 0, as_tuple=False).squeeze(-1)
         return feature_idxs
     
     @torch.no_grad()
