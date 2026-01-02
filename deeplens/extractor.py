@@ -108,7 +108,7 @@ class FromHuggingFace():
             return_tensors='pt'
         )
 
-    def get_activations(self, layer_idx: int) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
@@ -158,7 +158,7 @@ class FromHuggingFace():
             The hook is automatically removed after extraction to prevent memory leaks.
             Progress is displayed via tqdm progress bar.
         """
-        hook, activations = self.get_activations(self.layer)
+        hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         all_activations = []
         batch_texts = []     
         for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
@@ -260,7 +260,7 @@ class ExtractSingleSample():
         Note:
             The activations are automatically moved to CPU to save GPU memory.
         """
-        hook, activations = self.get_activations(self.layer)
+        hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         tokens = self.tokenize(sample)
         _ = self.model(**tokens)
         acts = activations[-1].squeeze()
@@ -289,7 +289,7 @@ class ExtractSingleSample():
             return_tensors='pt'
         ).to(self.device)
     
-    def get_activations(self, layer_idx: int) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
