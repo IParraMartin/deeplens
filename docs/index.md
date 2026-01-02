@@ -1,17 +1,19 @@
 # DeepLens
 
-A library for mechanistic interpretability research on transformer language models.
+An end-to-end library for mechanistic interpretability research on transformer language models.
 
 ## What is this?
 
-This library provides tools for understanding the internal computations of transformer models through techniques like sparse autoencoders (SAEs), activation patching, and feature analysis.
+DeepLens is a comprehensive toolkit that provides everything you need to understand the internal computations of transformer models. From extracting activations to training sparse autoencoders and analyzing learned features, DeepLens offers a complete pipeline for mechanistic interpretability research. Whether you're investigating individual neurons, discovering interpretable features, or running intervention experiments, this library streamlines the entire workflow.
 
 ## Key Features
 
-- **Activation Extraction** — Cache and inspect any internal activation in the model
-- **Feature Interventions** — Scale, ablate, or modify specific features and observe effects
-- **SAE Integration** — Work with sparse autoencoders to find interpretable directions
-- **Easy Experimentation** — Designed for fast iteration and exploratory research
+- **Activation Extraction** — Extract and cache any internal activation from transformer models for analysis
+- **Dataset Building** — Construct custom datasets from model activations for training and analysis
+- **SAE Training** — Train sparse autoencoders (SAEs) from scratch to discover interpretable feature directions
+- **Feature Analysis** — Analyze learned features, compute activation patterns, and understand what features represent
+- **Feature Interventions** — Scale, ablate, or modify specific features and observe downstream effects on model behavior
+- **End-to-End Pipeline** — Seamlessly go from raw model activations to trained SAEs to mechanistic insights
 
 ## Quick Example
 
