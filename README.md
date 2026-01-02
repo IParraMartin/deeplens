@@ -6,26 +6,30 @@ __DeepLens__ is a library for mechanistic interpretability. It includes a full s
 ## Quick How To
 ### Installation
 Before installing any dependency, I recommend creating a new virtual envoronment to avoid library conflicts.
-```
+
+```bash
 conda create -n deeplens python=3.11
 conda activate deeplens
 ```
 
 The following command should install the necessary dependencies and tools:
-```
+
+```bash
 pip install -e .
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 ```
 
 If any errors arise, you may alternatively use the manual installation:
-```
+
+```bash
 pip install -r requirements.txt
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 pip install -e .
 ```
 
 ### 1. MLP Feature Extraction
-```
+
+```python
 from deeplens.extractor import FromHuggingFace
 
 extractor = FromHuggingFace(
@@ -43,7 +47,8 @@ features = extractor.extract_features()
 ```
 
 ### 2. Training
-```
+
+```python
 from deeplens.sae import SparseAutoencoder
 from deeplens.train import SAETrainer
 from deeplens.utils.dataset import ActivationsDatasetBuilder
@@ -90,7 +95,8 @@ trainer.train()
 ```
 
 ### 3. SAE Feature Extraction
-```
+
+```python
 text = "What color is the car next to Mary's house?"
 sample = ExtractSingleSample(
     model="SAVED_MODEL_DIR",
@@ -104,7 +110,8 @@ acts = sample.get_mlp_acts()
 ```
 
 ### 4. Feature Intervention
-```
+
+```python
 text = "What color is the car next to Mary's house?"
 sample = ExtractSingleSample(
     model="SAVED_MODEL_DIR",
