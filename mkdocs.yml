@@ -20,7 +20,7 @@ theme:
       primary: deep blue
       accent: blue
       toggle:
-        icon: material/brightness-7
+        icon: material/brightness-3
         name: Switch to dark mode
   
   features:
@@ -59,7 +59,6 @@ markdown_extensions:
   - toc:
       permalink: true
 
-
 extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
@@ -74,10 +73,9 @@ nav:
   - Tutorials:
     - Basic Usage: tutorials/basic.md
     - Feature Interventions: tutorials/interventions.md
-    - Working with SAEs: tutorials/saes.md
+    - Training SAEs: tutorials/sae.md
   - API Reference:
     - Core API: api/core.md
-    - Models: api/models.md
     - Utils: api/utils.md
   - Resources:
     - Examples: examples.md
