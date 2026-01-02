@@ -7,8 +7,9 @@ from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 
 import numpy as np
-
 import wandb
+
+from deeplens.utils.tools import get_device
 
 
 __all__ = [
@@ -108,14 +109,7 @@ class SAETrainer():
         self.save_best_only = save_best_only
         self.log_wandb = log_to_wandb
 
-        if device == "auto":
-            self.device = torch.device(
-                "cuda" if torch.cuda.is_available() 
-                else "mps" if torch.backends.mps.is_available()
-                else "cpu"
-            )
-        else:
-            self.device = torch.device(device)
+        self.device = get_device(device)
         print(f"Running on device: {self.device}")
 
         if lrs_type is not None:

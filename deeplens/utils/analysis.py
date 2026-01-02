@@ -1,14 +1,19 @@
 from transformers import AutoTokenizer
 import torch
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
+from deeplens.extractor import ExtractSingleSample
 
 __all__ = [
     "generate_feature_heatmap",
     "plot_topk_distribution",
     "get_top_k_tokens"
 ]
+
+# TODO: Create a class for plot utils 
+# TODO: Include the tool 
 
 
 def generate_feature_heatmap(
@@ -123,6 +128,7 @@ def get_top_k_tokens(
         logits: torch.Tensor, 
         k: int = 10, 
         tokenizer: str = None,
+        to_dataframe: bool = False,
         verbose: bool = False
     ) -> dict:
     """Print the top-k predicted tokens and their logit values for each position in a sequence.
@@ -140,6 +146,8 @@ def get_top_k_tokens(
             for decoding token IDs into readable strings. If None, only token IDs and
             logit values are displayed without decoded text. Should match the tokenizer
             used during model training. Defaults to None.
+        to_dataframe (bool, optional): If True, returns the top-k predicted tokens at each 
+            position and their probavilities in a pandas DataFrame. Defaults to False.
         verbose (bool, optional): If True, prints the results to the console. Defaults
             to False. 
 
@@ -150,8 +158,8 @@ def get_top_k_tokens(
         Top-10 predicted tokens per position
         
         Position 0:
-            Token 262 ('the'): 12.45
-            Token 290 ('a'): 11.32
+            Token ('the'): 12.45
+            Token ('a'): 11.32
             ...
     """
     if isinstance(logits, torch.Tensor):
@@ -195,5 +203,8 @@ def get_top_k_tokens(
                 'token': token,
                 'probability': prob
             })
-
-    return out
+    
+    if to_dataframe:
+        return pd.DataFrame(out)
+    else:
+        return out

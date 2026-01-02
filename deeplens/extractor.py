@@ -1,13 +1,13 @@
 import os
 import warnings
-from tqdm import tqdm
-
-import torch
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
+
+from tqdm import tqdm
+import torch
 
 from deeplens.utils.tools import get_device, get_mlp_module
 
@@ -29,7 +29,7 @@ class FromHuggingFace():
     """
     def __init__(
             self, 
-            model: str = "gpt2", 
+            hf_model: str = "gpt2", 
             layer: int = 6,
             dataset_name: str = "HuggingFaceFW/fineweb",
             num_samples: int = 100000,
@@ -65,8 +65,8 @@ class FromHuggingFace():
                 the 'saved_features' directory. Defaults to True.
         """
 
-        self.model = AutoModelForCausalLM.from_pretrained(model)
-        self.tokenizer = AutoTokenizer.from_pretrained(model)
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         self.layer = layer
@@ -108,7 +108,7 @@ class FromHuggingFace():
             return_tensors='pt'
         )
 
-    def get_activations(self, layer_idx) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
@@ -158,7 +158,7 @@ class FromHuggingFace():
             The hook is automatically removed after extraction to prevent memory leaks.
             Progress is displayed via tqdm progress bar.
         """
-        hook, activations = self.get_activations(self.layer)
+        hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         all_activations = []
         batch_texts = []     
         for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
@@ -209,7 +209,7 @@ class ExtractSingleSample():
     """
     def __init__(
             self, 
-            model: str = "gpt2", 
+            hf_model: str = "gpt2", 
             layer: int = 3, 
             max_length: int = 1024, 
             device: str = "auto"
@@ -230,8 +230,8 @@ class ExtractSingleSample():
             device (str, optional): Device for model inference. Can be "auto" for automatic
                 selection, "cuda", "mps", or "cpu". Defaults to "auto".
         """
-        self.model = AutoModelForCausalLM.from_pretrained(model)
-        self.tokenizer = AutoTokenizer.from_pretrained(model)
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
         self.layer = layer
         self.max_length = max_length
 
@@ -260,14 +260,14 @@ class ExtractSingleSample():
         Note:
             The activations are automatically moved to CPU to save GPU memory.
         """
-        hook, activations = self.get_activations(self.layer)
+        hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         tokens = self.tokenize(sample)
         _ = self.model(**tokens)
         acts = activations[-1].squeeze()
         hook.remove()
         return acts
     
-    def tokenize(self, sample) -> dict:
+    def tokenize(self, sample: str) -> dict:
         """Tokenize a single text sample without padding.
 
         Converts the input text into token IDs suitable for model input. No padding is
@@ -289,7 +289,7 @@ class ExtractSingleSample():
             return_tensors='pt'
         ).to(self.device)
     
-    def get_activations(self, layer_idx) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
