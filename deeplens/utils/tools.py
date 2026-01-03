@@ -8,11 +8,11 @@ def get_device(device: str = "auto") -> torch.device:
     recommended.
 
     Args:
-        device (str, optional): The device in which the given process will
-        be allocated. Defaults to 'auto'.
+        device: The device in which the given process will be allocated. 
+            Defaults to 'auto'.
 
     Returns:
-        torch.device
+        torch.device: The selected device.
     """
     if device == "auto":
         return torch.device(
@@ -27,7 +27,7 @@ def get_mlp_module(hf_model: str) -> None:
     It is currently under development.
 
     Args:
-        hf_model (str): Hugging Face model identificator to extract the MLP 
+        hf_model: Hugging Face model identificator to extract the MLP 
             module
     """
     pass

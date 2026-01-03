@@ -45,7 +45,7 @@ class FromHuggingFace():
         appropriate device.
 
         Args:
-            model (str, optional): Name or path of the HuggingFace model to load.
+            hf_model (str, optional): Name or path of the HuggingFace model to load.
                 Should be a valid model identifier (e.g., "gpt2", "meta-llama/Llama-2-7b").
                 Defaults to "gpt2".
             layer (int, optional): Index of the transformer layer to extract activations from.
@@ -220,7 +220,7 @@ class ExtractSingleSample():
         The model is set to evaluation mode and moved to the appropriate device.
 
         Args:
-            model (str, optional): Name or path of the HuggingFace model to load.
+            hf_model (str, optional): Name or path of the HuggingFace model to load.
                 Should match the model used for sparse autoencoder training for consistency.
                 Defaults to "gpt2".
             layer (int, optional): Index of the transformer layer to extract activations from.
