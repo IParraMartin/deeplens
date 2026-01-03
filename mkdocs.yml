@@ -59,10 +59,6 @@ markdown_extensions:
   - toc:
       permalink: true
 
-extra_javascript:
-  - javascripts/mathjax.js
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
-
 # Navigation structure
 nav:
   - Home: index.md
@@ -71,11 +67,11 @@ nav:
     - Installation: installation.md
     - Quick Start: quickstart.md
   - Tutorials:
-    - Basic Usage: tutorials/basic.md
     - Feature Extraction: tutorials/extraction.md
     - Dataset Setup: tutorials/dataset.md
     - Training SAEs: tutorials/sae.md
     - Feature Interventions: tutorials/interventions.md
+    - Analysis: tutorials/analysis.md
   - API Reference:
     - Core API: api/core.md
     - Utils: api/utils.md

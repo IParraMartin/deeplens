@@ -63,7 +63,7 @@ n_features: 24576       # 8x expansion factor
 activation: 'relu'
 input_norm: True
 k: 768                  # Top-k sparsity
-beta_l1: None          # Use None for TopK, or a value like 0.001 for L1
+beta_l1: None           # Use None for TopK, or a value like 0.001 for L1
 tie_weights: False
 unit_norm_decoder: True
 ```
@@ -250,4 +250,4 @@ Congratulations! You've completed the full DeepLens pipeline. Here's what to exp
 
 ---
 
-Need more help? Check out the [tutorials](tutorials/basic.md) or open an issue on GitHub.
+Need more help? Check out the [tutorials](tutorials/extraction.md) or open an issue on GitHub.
