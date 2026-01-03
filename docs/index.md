@@ -81,7 +81,7 @@ pip install -e .
 
 ## Getting Started
 
-Check out the [Getting Started guide](getting-started.md) for a walkthrough of the core concepts, or dive into the [tutorials](tutorials/basic.md) for hands-on examples.
+Check out the [Getting Started guide](getting-started.md) for a walkthrough of the core concepts, or dive into the [tutorials](tutorials/extraction.md) for hands-on examples.
 
 ## Citation
 
