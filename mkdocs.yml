@@ -75,8 +75,6 @@ nav:
   - API Reference:
     - Core API: api/core.md
     - Utils: api/utils.md
-  - Resources:
-    - Examples: examples.md
 
 # Footer links
 extra:

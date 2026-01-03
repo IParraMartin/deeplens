@@ -208,3 +208,8 @@ def get_top_k_tokens(
         return pd.DataFrame(out)
     else:
         return out
+
+
+# def compare_activation_similarities():
+#     # Use cosine sim
+#     pass
