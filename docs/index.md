@@ -88,7 +88,7 @@ Check out the [Getting Started guide](getting-started.md) for a walkthrough of t
 If you use this library in your research, please cite:
 
 ```bibtex
-@software{yourlibrary2024,
+@software{deeplens2026-parra,
   author = {Iñigo Parra},
   title = {DeepLens: An End-to-end Tool for Mechanistic Interpretability},
   year = {2026},

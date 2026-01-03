@@ -18,7 +18,8 @@ __all__ = [
 
 def generate_feature_heatmap(
         logits: torch.Tensor, 
-        save_name: str = None
+        save_name: str = None,
+        k: int | None = None
     ) -> None:
     """Generate and display a heatmap visualization of logits across token positions.
 
@@ -32,6 +33,7 @@ def generate_feature_heatmap(
         save_name (str, optional): Filename (without extension) to save the plot.
             If provided, saves the figure as a PNG file with 300 DPI. If None, only
             displays the plot. Defaults to None.
+        k (int): top k vocabulary indexes to plot. Defaults to None.
 
     Returns:
         None: Displays the plot and optionally saves it to disk.
@@ -42,6 +44,11 @@ def generate_feature_heatmap(
     """
     if isinstance(logits, torch.Tensor):
         logits = logits.squeeze().detach().cpu().numpy()
+
+    if k is not None:
+        if isinstance(logits, np.ndarray):
+            logits = torch.from_numpy(logits)
+        logits = torch.topk(logits, k=k, dim=-1).values.numpy()
 
     plt.figure(figsize=(20, 6))
     plt.imshow(logits, cmap="inferno", aspect="auto")

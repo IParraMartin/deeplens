@@ -77,7 +77,7 @@ print(f"Top 20 features: {top_features.tolist()}")
 
 ## Visualizing Logits
 
-### Feature Heatmap
+### Heatmap
 
 Generate a heatmap showing how logits distribute across the vocabulary:
 
@@ -112,7 +112,7 @@ The heatmap shows:
 - **Y-axis**: Token positions
 - **Color**: Logit magnitude (brighter = higher)
 
-[INSERT IMAGE HERE]
+![Heatmap](/assets/heat.png)
 
 ### Top-K Token Distribution
 
@@ -140,7 +140,7 @@ Parameters:
 - `title`: Plot title
 - `save_name`: Filename to save (without extension)
 
-[INSERT IMAGE HERE]
+![Top-k token distribution](/assets/dist.png)
 
 ### Extract Top Tokens as Data
 
