@@ -48,7 +48,7 @@ def pipeline(
             Defaults to False.
 
     Returns:
-        tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A 3-tuple containing:
+        A 3-tuple containing:
             - original: Model output with original unmodified activations
             - decoded: Model output with SAE-reconstructed activations (no intervention)
             - modified: Model output with intervened feature activations
