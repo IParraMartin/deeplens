@@ -72,8 +72,10 @@ nav:
     - Quick Start: quickstart.md
   - Tutorials:
     - Basic Usage: tutorials/basic.md
-    - Feature Interventions: tutorials/interventions.md
+    - Feature Extraction: tutorials/extraction.md
+    - Dataset Setup: tutorials/dataset.md
     - Training SAEs: tutorials/sae.md
+    - Feature Interventions: tutorials/interventions.md
   - API Reference:
     - Core API: api/core.md
     - Utils: api/utils.md
