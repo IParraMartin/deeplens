@@ -7,3 +7,5 @@
 ::: deeplens.sae
 
 ::: deeplens.train
+
+::: deeplens.pipeline
