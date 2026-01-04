@@ -112,7 +112,7 @@ The heatmap shows:
 - **Y-axis**: Token positions
 - **Color**: Logit magnitude (brighter = higher)
 
-![Heatmap](/assets/heat.png)
+![Heatmap](../assets/heat.png)
 
 ### Top-K Token Distribution
 
@@ -140,7 +140,7 @@ Parameters:
 - `title`: Plot title
 - `save_name`: Filename to save (without extension)
 
-![Top-k token distribution](/assets/dist.png)
+![Top-k token distribution](../assets/dist.png)
 
 ### Extract Top Tokens as Data
 

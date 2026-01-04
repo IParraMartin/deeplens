@@ -1,6 +1,7 @@
 # DeepLens
 
-![DeepLens](assets/header.png)
+![DeepLens](assets/header.png#only-light)
+![DeepLens](assets/header_dark.png#only-dark)
 
 An end-to-end library for mechanistic interpretability research on transformer language models.
 

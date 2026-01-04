@@ -43,6 +43,7 @@ print(f"Extracted features shape: {features.shape}")
 ```
 
 **What's happening:**
+
 - We're loading GPT-2 and extracting activations from layer 3's MLP
 - Using 50,000 samples from the FineWeb dataset
 - Features are automatically saved to disk for the next step
@@ -128,6 +129,7 @@ trainer.train()
 ```
 
 **Training tips:**
+
 - Training will take from minutes to a hours depending on your dataset size and hardware
 - The best model checkpoint is automatically saved to `models/`
 - Monitor the reconstruction loss and sparsity metrics
@@ -234,15 +236,18 @@ Congratulations! You've completed the full DeepLens pipeline. Here's what to exp
 ## Common Issues
 
 **Out of memory during extraction:**
+
 - Reduce `inference_batch_size` or `seq_length`
 - Use a smaller model like GPT-2 instead of larger variants
 
 **SAE training is slow:**
+
 - Enable `bf16=True` for faster training on modern GPUs
 - Reduce `num_samples` or `n_features`
 - Ensure you're using GPU with `device="cuda"`
 
 **Features don't seem interpretable:**
+
 - Try different sparsity values (adjust `k` or `beta_l1`)
 - Train longer (more epochs)
 - Use more training samples
