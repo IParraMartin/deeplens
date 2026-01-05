@@ -46,7 +46,6 @@ Now that you have DeepLens installed, explore these resources:
 - **[Quickstart Guide](quickstart.md)**: Complete example workflows
 - **[Tutorials](tutorials/extraction.md)**: In-depth guides for each component
 - **[API Reference](api/core.md)**: Detailed API documentation
-- **[Examples](examples.md)**: Real-world use cases
 
 ## Getting Help
 

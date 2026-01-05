@@ -1,6 +1,7 @@
 # DeepLens
 
-![DeepLens](assets/header.png)
+![DeepLens](assets/header.png#only-light)
+![DeepLens](assets/header_dark.png#only-dark)
 
 An end-to-end library for mechanistic interpretability research on transformer language models.
 
@@ -88,7 +89,7 @@ Check out the [Getting Started guide](getting-started.md) for a walkthrough of t
 If you use this library in your research, please cite:
 
 ```bibtex
-@software{yourlibrary2024,
+@software{deeplens2026-parra,
   author = {Iñigo Parra},
   title = {DeepLens: An End-to-end Tool for Mechanistic Interpretability},
   year = {2026},
