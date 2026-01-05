@@ -6,12 +6,34 @@ build-backend = "setuptools.build_meta"
 name = "deeplens"
 version = "0.1.0"
 description = "A library to train and use Sparse Autoencoders for mechanistic interpretability"
+readme = "README.md"
 authors = [{name = "Iñigo Parra", email = "iparra@berkeley.edu"}]
+license = {file = "LICENSE"}
 requires-python = ">=3.11"
+keywords = ["machine-learning", "interpretability", "sparse-autoencoders", "mechanistic-interpretability", "deep-learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/iparramartin/deeplens"
+Documentation = "https://github.com/iparramartin/deeplens"
+Repository = "https://github.com/iparramartin/deeplens"
+"Bug Tracker" = "https://github.com/iparramartin/deeplens/issues"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools]
-packages = {find = {}}
+packages = {find = {where = ["."], exclude = ["tests*", "demo*", "docs*", "cache*"]}}
+
+[tool.setuptools.package-data]
+deeplens = ["py.typed"]
