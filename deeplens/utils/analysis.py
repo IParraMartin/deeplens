@@ -8,16 +8,16 @@ from deeplens.extractor import ExtractSingleSample
 from deeplens.intervene import InterveneFeatures
 
 __all__ = [
-    "generate_feature_heatmap",
+    "generate_logit_heatmap",
     "plot_topk_distribution",
-    "get_top_k_tokens"
+    "get_top_k_tokens",
+    "get_most_active_features"
 ]
 
-# TODO: Create a class for plot utils 
-# TODO: Include the tool 
+# TODO: Create a class for plot utils
 
 
-def generate_feature_heatmap(
+def generate_logit_heatmap(
         logits: torch.Tensor, 
         save_name: str = None,
         k: int | None = None
