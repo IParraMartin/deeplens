@@ -83,6 +83,9 @@ extra:
       link: https://github.com/iparramartin
     - icon: fontawesome/brands/twitter
       link: https://x.com/IParraMartin
+    
+extra_css:
+  - stylesheets/extra.css
 
 # Plugins
 plugins:
