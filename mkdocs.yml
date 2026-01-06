@@ -75,6 +75,8 @@ nav:
   - API Reference:
     - Core API: api/core.md
     - Utils: api/utils.md
+  - Pretrained SAEs:
+    - Models: pretrained/repository.md
 
 # Footer links
 extra:
