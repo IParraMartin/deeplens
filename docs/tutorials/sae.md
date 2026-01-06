@@ -433,41 +433,32 @@ import torch
 
 # 1. Load data
 dataset = ActivationsDatasetBuilder(
-    activations="saved_features/features_layer_3_100000.pt",
+    activations="saved_features/features_layer_3_1171436.pt",
     splits=[0.8, 0.2],
-    batch_size=32,
+    batch_size=16,
     norm=True
 )
-train_loader, eval_loader = dataset.get_dataloaders()
+train, eval = dataset.get_dataloaders(ddp=False)
 
-# 2. Create model
-model = SparseAutoencoder(
-    input_dims=3072,
-    n_features=24576,
-    activation='relu',
-    input_norm=True,
-    k=768,
-    beta_l1=None,
-    tie_weights=False,
-    unit_norm_decoder=True
-)
+config = SAETrainer.config_from_yaml('demo/config.yaml')
+model = SparseAutoencoder(**config)
 
 # 3. Setup optimizer
 optimizer = torch.optim.Adam(
-    model.parameters(),
-    lr=3e-4,
-    betas=(0.9, 0.99),
-    weight_decay=1e-4
+    model.parameters(), 
+    lr=0.0003, 
+    betas=(0.9,0.99),
+    weight_decay=1e-4 # Just when using untied weights! Else set to 0
 )
 
 # 4. Train
 trainer = SAETrainer(
     model=model,
     model_name="gpt2_layer3_sae",
-    train_dataloader=train_loader,
-    eval_dataloader=eval_loader,
+    train_dataloader=train,
+    eval_dataloader=eval,
     optim=optimizer,
-    epochs=5,
+    epochs=3,
     bf16=True,
     random_seed=42,
     save_checkpoints=True,
