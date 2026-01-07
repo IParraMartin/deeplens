@@ -3,9 +3,11 @@ import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from dataclasses import dataclass
 
 from deeplens.extractor import ExtractSingleSample
 from deeplens.intervene import InterveneFeatures
+
 
 __all__ = [
     "generate_logit_heatmap",
@@ -218,6 +220,11 @@ def get_top_k_tokens(
         return out
 
 
+@dataclass
+class FeatureResult:
+    features: torch.Tensor
+    values: torch.Tensor | None = None
+
 def get_most_active_features(
         sentences: list[str], 
         hf_model: str,
@@ -226,8 +233,9 @@ def get_most_active_features(
         layer: int, 
         k: int | None = None,
         target: int | str | None = None,
-        case_sensitive: bool = True
-    ) -> dict[str, torch.Tensor]:
+        case_sensitive: bool = True,
+        return_values: bool = False
+    ) -> dict[str, FeatureResult]:
     """Extract SAE latent features for specific tokens across multiple sentences.
 
     This function processes a list of sentences through a transformer model and sparse
@@ -253,14 +261,18 @@ def get_most_active_features(
             Defaults to None.
         case_sensitive (bool, optional): Whether string matching for target tokens should
             be case-sensitive. Only applies when target is a string. Defaults to True.
+        return_values (bool, optional): Whether the function will return features and activation
+            values of each feature. Defaults to False.
 
     Returns:
-        dict[str, torch.Tensor]: Dictionary mapping descriptive keys to feature tensors.
+        dict[str, FeatureResult]: Dictionary mapping descriptive keys to FeatureResult objects.
             Keys follow the format "sent_{idx}_pos_{pos}_tok_{token}" where:
             - idx: 1-indexed sentence number
             - pos: 0-indexed token position within the sentence
             - token: The decoded token string (stripped of whitespace)
-            Values are tensors containing the indices of active/top-k features.
+            Values are FeatureResult dataclass instances with:
+            - features: Tensor containing indices of active/top-k features
+            - values: Tensor of activation values (or None if return_values=False)
     """
     from transformers import AutoTokenizer
     
@@ -304,18 +316,21 @@ def get_most_active_features(
         for pos in positions:
             if pos >= num_tokens:
                 continue
-            feats = sae_features_extractor.get_alive_features(
-                activations=acts, 
-                token_position=pos, 
-                k=k
-            )
+            if return_values:
+                feats, vals = sae_features_extractor.get_alive_features(
+                    activations=acts, 
+                    token_position=pos, 
+                    k=k,
+                    return_values=True
+                )
+            else:
+                feats = sae_features_extractor.get_alive_features(
+                    activations=acts, 
+                    token_position=pos, 
+                    k=k,
+                    return_values=False
+                )
             token_str = tokenizer.decode([input_ids[pos]])
             key = f"sent_{idx+1}_pos_{pos}_tok_{token_str.strip()}"
-            features[key] = feats.cpu()
-        
+            features[key] = FeatureResult(feats.cpu(), vals.cpu() if return_values else None)
     return features
-
-
-# def compare_activation_similarities():
-#     # Use cosine sim
-#     pass
