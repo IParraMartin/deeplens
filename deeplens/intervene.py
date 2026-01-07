@@ -61,11 +61,33 @@ class InterveneFeatures():
         self.model = self.load_model()
 
     @torch.no_grad()
+    def get_decoded(self, activations):
+        """Encode input activations through the sparse autoencoder to get latent features.
+
+        Passes the input activations through the sparse autoencoder's forward pass and
+        returns the latent feature representation (z) from the encoded space.
+
+        Args:
+            activations (torch.Tensor | array-like): Input activations to encode. Can be a
+                PyTorch tensor or any array-like structure that can be converted to a tensor.
+
+        Returns:
+            torch.Tensor: The latent feature representation (z) from the sparse autoencoder's
+                encoded space.
+        """
+        if not isinstance(activations, torch.Tensor):
+            activations = torch.Tensor(activations)
+        activations = activations.to(self.device)
+        _, z, _ = self.model(activations)
+        return z
+
+    @torch.no_grad()
     def get_alive_features(
             self, 
             activations: torch.Tensor, 
             token_position: int = -1, 
-            k: int | None = None
+            k: int | None = None,
+            return_values: bool = False
         ) -> torch.Tensor:
         """Get indices of non-zero (active) features in the latent space for a specific token.
 
@@ -79,21 +101,25 @@ class InterveneFeatures():
                 Use -1 for the last token. Defaults to -1.
             k (int, optional): If provided, returns only the top-k most active features
                 instead of all non-zero features. Defaults to None.
+            return_values (bool, optional): If True, returns both indices and values.
+                Defaults to False.
 
         Returns:
-            torch.Tensor: A 1D tensor containing the indices of non-zero features in the
-                latent space at the specified token position.
+            torch.Tensor | tuple[torch.Tensor, torch.Tensor]: If return_values is False,
+                returns a 1D tensor containing the indices of non-zero features. If True,
+                returns a tuple of (indices, values).
         """
-        if not isinstance(activations, torch.Tensor):
-            activations = torch.Tensor(activations)
-        activations = activations.to(self.device)
-        _, z, _ = self.model(activations)
-
+        z = self.get_decoded(activations)
         z_token = z[token_position]
         if k is not None:
-            feature_idxs = torch.topk(z_token, k=k).indices
+            topk_result = torch.topk(z_token, k=k)
+            feature_idxs = topk_result.indices
+            feature_vals = topk_result.values
         else:
             feature_idxs = torch.nonzero(z_token != 0, as_tuple=False).squeeze(-1)
+            feature_vals = z_token[feature_idxs]
+        if return_values:
+            return feature_idxs, feature_vals
         return feature_idxs
     
     @torch.no_grad()
