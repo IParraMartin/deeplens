@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--weight_decay', 
         type=float, 
-        default=1e-4, 
+        default=1e-5, 
         help="Weight decay (use 0 for tied weights)"
     )
     parser.add_argument(
