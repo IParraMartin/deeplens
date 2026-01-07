@@ -21,5 +21,5 @@
 - **Context Window**: 1,024
 - **Eval Loss**: 0.15
 
-[Download Model](){ .md-button .md-button--primary }
-[Download Config](){ .md-button }
+[Download Model](https://github.com/iparramartin/deeplens/releases/download/v1.0.1/gpt2_L12_1M.pt){ .md-button .md-button--primary }
+[Download Config](https://github.com/iparramartin/deeplens/releases/download/v1.0.1/config_gpt2_L12.yaml){ .md-button }
