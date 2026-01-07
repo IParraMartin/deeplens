@@ -61,7 +61,7 @@ class InterveneFeatures():
         self.model = self.load_model()
 
     @torch.no_grad()
-    def get_decoded(self, activations):
+    def get_decoded(self, activations) -> torch.Tensor:
         """Encode input activations through the sparse autoencoder to get latent features.
 
         Passes the input activations through the sparse autoencoder's forward pass and
