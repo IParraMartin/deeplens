@@ -69,7 +69,7 @@ optimizer = torch.optim.Adam(
     model.parameters(), 
     lr=0.0003, 
     betas=(0.9,0.99),
-    weight_decay=1e-4 # Just when using untied weights! Else set to 0
+    weight_decay=1e-5 # Just when using untied weights! Else set to 0
 )
 
 trainer = SAETrainer(

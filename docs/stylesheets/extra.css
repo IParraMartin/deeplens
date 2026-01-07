@@ -1,0 +1,11 @@
+/* Smooth transition for color scheme changes */
+body,
+body * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.md-search__input,
+.highlight code,
+.highlighttable {
+    transition: none;
+}
