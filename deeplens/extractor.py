@@ -190,7 +190,7 @@ class FromHuggingFace():
         hook.remove()
 
         features = torch.cat(all_activations, dim=0)
-        print(f"Extracted features shape: {features.shape}")
+        print(f"Extracting features... (shape: {features.shape})")
         
         if self.save_features:
             os.makedirs('saved_features', exist_ok=True)
