@@ -82,11 +82,17 @@ print(f"Top 20 features: {top_features.tolist()}")
 Generate a heatmap showing how logits distribute across the vocabulary:
 
 ```python
-from deeplens.utils.analysis import generate_feature_heatmap
+from deeplens.utils.analysis import AnalysisUtils
 from deeplens.intervene import ReinjectSingleSample
 
 # Get logits from the model
 reinject = ReinjectSingleSample(hf_model="gpt2")
+analysis = AnalysisUtils(
+    hf_model="gpt2",
+    sae_model="MODEL/DIR",
+    sae_config="CONFIG/DIR",
+    layer=3
+)
 
 # First, get modified activations (or original ones)
 _, original_acts, modified_acts = intervene.intervene_feature(
@@ -104,7 +110,7 @@ logits = reinject.reinject_and_generate(
 )
 
 # Generate heatmap
-generate_feature_heatmap(logits, save_name="logits_heatmap")
+analysis.generate_feature_heatmap(logits, k=1000, save_name="logits_heatmap")
 ```
 
 The heatmap shows:
@@ -119,18 +125,13 @@ The heatmap shows:
 Visualize the most likely next tokens at a specific position:
 
 ```python
-from deeplens.utils.analysis import plot_topk_distribution
-
-# Plot top 20 predictions at the last position
-plot_topk_distribution(
-    logits,
-    k=20,
-    tokenizer="gpt2",
-    position=-1,  # Last position
-    use_softmax=True,
-    title="Top-20 Next Token Predictions",
-    save_name="token_distribution"
-)
+analysis.plot_topk_distribution(
+        logits=logits, 
+        use_softmax=True, 
+        k=50, 
+        position=-1, 
+        title="SAE Logits"
+    )
 ```
 
 Parameters:
@@ -145,17 +146,12 @@ Parameters:
 ### Extract Top Tokens as Data
 
 ```python
-import pandas as pd
-
-# Get as pandas DataFrame for easier analysis
-df = get_top_k_tokens(
-    logits,
-    k=10,
-    tokenizer="gpt2",
-    to_dataframe=True
+results = analysis.get_top_k_tokens(
+    logits=modified_output,
+    k=5,
+    to_dataframe=True,
+    verbose=False
 )
-
-print(df.head(20))
 ```
 
 ---
