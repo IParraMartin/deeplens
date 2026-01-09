@@ -1,11 +1,7 @@
 import os
-os.makedirs("cache", exist_ok=True)
-os.environ["HF_HOME"] = "cache"
-
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
-
 from tqdm import tqdm
 import torch
 

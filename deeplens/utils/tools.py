@@ -1,6 +1,5 @@
 import torch
 from transformers import AutoConfig, AutoModelForCausalLM
-import transformers
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -27,9 +26,9 @@ def get_device(device: str = "auto") -> torch.device:
         )
     return torch.device(device)
 
-def get_architecture(hf_model):
-    config = AutoConfig.from_pretrained(hf_model, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_config(config, trust_remote_code=True)
+def get_architecture(hf_model, cache_dir: str = 'cache'):
+    config = AutoConfig.from_pretrained(hf_model, trust_remote_code=True, cache_dir=cache_dir)
+    model = AutoModelForCausalLM.from_config(config, trust_remote_code=True, cache_dir=cache_dir)
     print(model)
 
 # DONE: 
