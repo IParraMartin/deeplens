@@ -75,7 +75,7 @@ Install from source:
 ```bash
 git clone https://github.com/iparramartin/deeplens
 cd deeplens
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 pip install -r requirements.txt
 pip install -e .
 ```

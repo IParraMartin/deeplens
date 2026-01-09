@@ -1,16 +1,13 @@
 import os
-import warnings
-
-os.makedirs("cache", exist_ok=True)
-os.environ["HF_HOME"] = "cache"
+import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
-
 from tqdm import tqdm
 import torch
 
-from deeplens.utils.tools import get_device, get_mlp_module
+from deeplens.utils.tools import get_device
 
+import warnings
 warnings.filterwarnings('ignore')
 
 
@@ -36,7 +33,8 @@ class FromHuggingFace():
             seq_length: int = 128,
             inference_batch_size: int = 16, 
             device: str = "auto",
-            save_features: bool = True
+            save_features: bool = True,
+            cache_dir: str = 'cache'
         ) -> None:
         """Initialize the activation extractor with model and dataset configuration.
 
@@ -63,10 +61,13 @@ class FromHuggingFace():
                 selection, "cuda", "mps", or "cpu". Defaults to "auto".
             save_features (bool, optional): Whether to save extracted features to disk in
                 the 'saved_features' directory. Defaults to True.
+            cache_dir (str, optional): Directory to cache downloaded models and datasets.
+                Defaults to 'cache'.
         """
-
-        self.model = AutoModelForCausalLM.from_pretrained(hf_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        os.makedirs(cache_dir, exist_ok=True)
+        self.model_name = hf_model.split('/')[-1]
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model, cache_dir=cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         self.layer = layer
@@ -77,7 +78,8 @@ class FromHuggingFace():
         self.dataset = load_dataset(
             dataset_name, 
             split='train',
-            streaming=True
+            streaming=True,
+            cache_dir=cache_dir
         ).take(num_samples)
 
         self.device = get_device(device)
@@ -108,7 +110,7 @@ class FromHuggingFace():
             return_tensors='pt'
         )
 
-    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
@@ -127,10 +129,29 @@ class FromHuggingFace():
         activations = []
         def hook_fn(module, input, output):
             activations.append(output.detach().cpu())
-        if hasattr(self.model, "transformer"):
+        
+        if isinstance(self.model, (
+            transformers.GPT2LMHeadModel, 
+            transformers.FalconForCausalLM
+        )):
             hook = self.model.transformer.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.LlamaForCausalLM, 
+            transformers.MistralForCausalLM, 
+            transformers.Gemma3ForCausalLM, 
+            transformers.GemmaForCausalLM, 
+            transformers.Qwen2ForCausalLM,
+            transformers.Qwen3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.act_fn.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.PhiForCausalLM, 
+            transformers.Phi3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.activation_fn.register_forward_hook(hook_fn)
         else:
-            hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+            raise NotImplementedError(f"Model type {type(self.model).__name__} is not currently supported.")
+        
         return hook, activations
 
     @torch.no_grad()
@@ -193,8 +214,8 @@ class FromHuggingFace():
         print(f"Extracting features... (shape: {features.shape})")
         
         if self.save_features:
-            os.makedirs('saved_features', exist_ok=True)
-            save_path = f"saved_features/features_layer_{self.layer}_{features.shape[0]}.pt"
+            os.makedirs(f'saved_features/{self.model_name}', exist_ok=True)
+            save_path = f"saved_features/{self.model_name}/features_layer_{self.layer}_{features.shape[0]}.pt"
             torch.save(features, save_path)
             print(f"Features saved to {save_path}")
     
@@ -212,7 +233,8 @@ class ExtractSingleSample():
             hf_model: str = "gpt2", 
             layer: int = 3, 
             max_length: int = 1024, 
-            device: str = "auto"
+            device: str = "auto",
+            cache_dir: str = 'cache'
         ) -> None:
         """Initialize the single sample extractor with model configuration.
 
@@ -229,9 +251,12 @@ class ExtractSingleSample():
                 sequences will be truncated. Defaults to 1024.
             device (str, optional): Device for model inference. Can be "auto" for automatic
                 selection, "cuda", "mps", or "cpu". Defaults to "auto".
+            cache_dir (str, optional): Directory to cache downloaded models and datasets.
+                Defaults to 'cache'.
         """
-        self.model = AutoModelForCausalLM.from_pretrained(hf_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        os.makedirs(cache_dir, exist_ok=True)
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model, cache_dir=cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.layer = layer
         self.max_length = max_length
 
@@ -289,7 +314,7 @@ class ExtractSingleSample():
             return_tensors='pt'
         ).to(self.device)
     
-    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
@@ -308,8 +333,27 @@ class ExtractSingleSample():
         activations = []
         def hook_fn(module, input, output):
             activations.append(output.detach().cpu())
-        if hasattr(self.model, 'transformer'):
+        
+        if isinstance(self.model, (
+            transformers.GPT2LMHeadModel, 
+            transformers.FalconForCausalLM
+        )):
             hook = self.model.transformer.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.LlamaForCausalLM, 
+            transformers.MistralForCausalLM, 
+            transformers.Gemma3ForCausalLM, 
+            transformers.GemmaForCausalLM, 
+            transformers.Qwen2ForCausalLM,
+            transformers.Qwen3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.act_fn.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.PhiForCausalLM, 
+            transformers.Phi3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.activation_fn.register_forward_hook(hook_fn)
         else:
-            hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+            raise NotImplementedError(f"Model type {type(self.model).__name__} is not currently supported.")
+        
         return hook, activations

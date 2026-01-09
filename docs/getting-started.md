@@ -32,12 +32,27 @@ DeepLens follows a simple four-step workflow:
 
 ## Currently Supported Models
 
-Currently, DeepLens supports these GPT-2 variants:
+Currently, DeepLens supports:
 
-- `gpt2` (124M parameters)
-- `gpt2-medium` (355M parameters)
-- `gpt2-large` (774M parameters)
-- `gpt2-xl` (1.5B parameters)
+- `gpt2`
+- `gpt2-medium`
+- `gpt2-large`
+- `gpt2-xl`
+- `meta-llama/Llama-2-7b-chat-hf`
+- `meta-llama/Llama-3.2-1B`
+- `TinyLlama/TinyLlama-1.1B-Chat-v1.0`
+- `microsoft/phi-2`
+- `microsoft/Phi-3.5-mini-instruct`
+- `microsoft/Phi-4-mini-instruct`
+- `mistralai/Mistral-7B-v0.1`
+- `google/gemma-3-270m`
+- `google/gemma-7b-it`
+- `tiiuae/falcon-7b`
+- `Qwen/Qwen2.5-7B-Instruct`
+- `deepseek-ai/DeepSeek-R1-0528-Qwen3-8B`
+- `deepseek-ai/DeepSeek-R1-Distill-Llama-8B`
+
+If any errors arise, feel free to [open an issue](https://github.com/IParraMartin/deeplens/issues) on GitHub.
 
 ## Next Steps
 

@@ -17,7 +17,7 @@ To install DeepLens and its dependencies, run the following commands:
 
 ```bash
 pip install -e .
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 ```
 
 ## Alternative Installation
@@ -26,7 +26,7 @@ If you encounter any errors with the standard installation, try the manual insta
 
 ```bash
 pip install -r requirements.txt
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 pip install -e .
 ```
 
@@ -43,13 +43,13 @@ We recommend installing `numpy<2`, as this version was used during development a
 **For CUDA support:**
 
 ```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 ```
 
 **For MPS/CPU usage:**
 
 ```bash
-pip install torch torchvision torchaudio
+pip install torch torchvision
 ```
 
 ## Future Updates
