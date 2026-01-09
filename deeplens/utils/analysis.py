@@ -49,6 +49,8 @@ class AnalysisUtils():
                 `get_most_active_features`. Defaults to None.
             layer (int, optional): Index of the transformer layer to extract activations
                 from (0-indexed). Required for `get_most_active_features`. Defaults to None.
+            cache_dir (str, optional): Directory to cache downloaded models.
+                Defaults to 'cache'.
         """
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.hf_model = hf_model
