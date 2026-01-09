@@ -4,11 +4,12 @@ import warnings
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
-from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import transformers
 
 import torch
 from deeplens.sae import SparseAutoencoder
-from deeplens.utils.tools import get_device, get_mlp_module
+from deeplens.utils.tools import get_device
 
 warnings.filterwarnings('ignore')
 
@@ -283,7 +284,8 @@ class ReinjectSingleSample():
             call_count[0] += 1
             return modified_activations
         
-        hook = self.model.transformer.h[layer].mlp.act.register_forward_hook(replacement_hook)
+        mlp_module = self.get_module_for_replacement_hook(layer_idx=layer)
+        hook = mlp_module.register_forward_hook(replacement_hook)
         tokens = self.tokenizer(text, return_tensors='pt').to(self.device)
         try:
             if generate:
@@ -299,3 +301,39 @@ class ReinjectSingleSample():
                 return out.logits
         finally:
             hook.remove()
+
+    def get_module_for_replacement_hook(self, layer_idx) -> torch.nn.Module:
+        """Get the MLP activation module for a specific layer.
+
+        Retrieves the MLP activation function module at the specified layer,
+        which can be used to register forward hooks for activation replacement.
+
+        Args:
+            layer_idx (int): Index of the transformer layer (0-indexed).
+
+        Returns:
+            torch.nn.Module: The MLP activation module at the specified layer.
+        """
+        if isinstance(self.model, (
+            transformers.GPT2LMHeadModel, 
+            transformers.FalconForCausalLM
+        )):
+            module = self.model.transformer.h[layer_idx].mlp.act
+        elif isinstance(self.model, (
+            transformers.LlamaForCausalLM, 
+            transformers.MistralForCausalLM, 
+            transformers.Gemma3ForCausalLM, 
+            transformers.GemmaForCausalLM, 
+            transformers.Qwen2ForCausalLM,
+            transformers.Qwen3ForCausalLM
+        )):
+            module = self.model.model.layers[layer_idx].mlp.act_fn
+        elif isinstance(self.model, (
+            transformers.PhiForCausalLM, 
+            transformers.Phi3ForCausalLM
+        )):
+            module = self.model.model.layers[layer_idx].mlp.activation_fn
+        else:
+            raise NotImplementedError(f"Model type {type(self.model).__name__} is not currently supported.")
+    
+        return module

@@ -3,13 +3,14 @@ import warnings
 
 os.makedirs("cache", exist_ok=True)
 os.environ["HF_HOME"] = "cache"
+import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 
 from tqdm import tqdm
 import torch
 
-from deeplens.utils.tools import get_device, get_mlp_module
+from deeplens.utils.tools import get_device
 
 warnings.filterwarnings('ignore')
 
@@ -108,7 +109,7 @@ class FromHuggingFace():
             return_tensors='pt'
         )
 
-    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
@@ -127,10 +128,29 @@ class FromHuggingFace():
         activations = []
         def hook_fn(module, input, output):
             activations.append(output.detach().cpu())
-        if hasattr(self.model, "transformer"):
+        
+        if isinstance(self.model, (
+            transformers.GPT2LMHeadModel, 
+            transformers.FalconForCausalLM
+        )):
             hook = self.model.transformer.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.LlamaForCausalLM, 
+            transformers.MistralForCausalLM, 
+            transformers.Gemma3ForCausalLM, 
+            transformers.GemmaForCausalLM, 
+            transformers.Qwen2ForCausalLM,
+            transformers.Qwen3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.act_fn.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.PhiForCausalLM, 
+            transformers.Phi3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.activation_fn.register_forward_hook(hook_fn)
         else:
-            hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+            raise NotImplementedError(f"Model type {type(self.model).__name__} is not currently supported.")
+        
         return hook, activations
 
     @torch.no_grad()
@@ -289,7 +309,7 @@ class ExtractSingleSample():
             return_tensors='pt'
         ).to(self.device)
     
-    def set_forward_hook_and_return_activations(self, layer_idx: int) -> tuple:
+    def set_forward_hook_and_return_activations(self, layer_idx) -> tuple:
         """Register a forward hook to capture MLP activations from a specific layer.
 
         Creates a hook function that captures the output of the MLP activation function
@@ -308,8 +328,27 @@ class ExtractSingleSample():
         activations = []
         def hook_fn(module, input, output):
             activations.append(output.detach().cpu())
-        if hasattr(self.model, 'transformer'):
+        
+        if isinstance(self.model, (
+            transformers.GPT2LMHeadModel, 
+            transformers.FalconForCausalLM
+        )):
             hook = self.model.transformer.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.LlamaForCausalLM, 
+            transformers.MistralForCausalLM, 
+            transformers.Gemma3ForCausalLM, 
+            transformers.GemmaForCausalLM, 
+            transformers.Qwen2ForCausalLM,
+            transformers.Qwen3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.act_fn.register_forward_hook(hook_fn)
+        elif isinstance(self.model, (
+            transformers.PhiForCausalLM, 
+            transformers.Phi3ForCausalLM
+        )):
+            hook = self.model.model.layers[layer_idx].mlp.activation_fn.register_forward_hook(hook_fn)
         else:
-            hook = self.model.h[layer_idx].mlp.act.register_forward_hook(hook_fn)
+            raise NotImplementedError(f"Model type {type(self.model).__name__} is not currently supported.")
+        
         return hook, activations
