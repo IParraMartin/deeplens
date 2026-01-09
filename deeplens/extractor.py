@@ -64,7 +64,7 @@ class FromHuggingFace():
             save_features (bool, optional): Whether to save extracted features to disk in
                 the 'saved_features' directory. Defaults to True.
         """
-
+        self.model_name = hf_model.split('/')[-1]
         self.model = AutoModelForCausalLM.from_pretrained(hf_model)
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
         self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -193,8 +193,8 @@ class FromHuggingFace():
         print(f"Extracting features... (shape: {features.shape})")
         
         if self.save_features:
-            os.makedirs('saved_features', exist_ok=True)
-            save_path = f"saved_features/features_layer_{self.layer}_{features.shape[0]}.pt"
+            os.makedirs(f'saved_features/{self.model_name}', exist_ok=True)
+            save_path = f"saved_features/{self.model_name}/features_layer_{self.layer}_{features.shape[0]}.pt"
             torch.save(features, save_path)
             print(f"Features saved to {save_path}")
     
