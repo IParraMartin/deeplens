@@ -1,6 +1,0 @@
-cache
-deeplens
-demo
-resources
-saved_features
-saved_models
