@@ -16,8 +16,12 @@ The library should work with Python 3.11+, but I recommend using Python 3.11 spe
 To install DeepLens and its dependencies, run the following commands:
 
 ```bash
-pip install -e .
-pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+pip install deeplens-sae
+
+# FOR WINDOWS
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# OR FOR MAC
+pip install torch torchvision
 ```
 
 ## Alternative Installation
@@ -26,7 +30,12 @@ If you encounter any errors with the standard installation, try the manual insta
 
 ```bash
 pip install -r requirements.txt
+
+# FOR WINDOWS
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# OR FOR MAC
+pip install torch torchvision
+
 pip install -e .
 ```
 
