@@ -131,10 +131,3 @@ sample = ExtractSingleSample(
 
 acts = sample.get_mlp_acts()
 ```
-
-## Currently Supported Models
-
-- gpt2
-- gpt2-medium
-- gpt2-large
-- gpt2-xl
