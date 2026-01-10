@@ -1,7 +1,7 @@
 __pycache__
 cache
 configurations
-deeplens.egg-info
+deeplens_sae.egg-info
 saved_features
 saved_models
 .DS_Store
