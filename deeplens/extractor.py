@@ -1,17 +1,13 @@
 import os
-import warnings
-
-os.makedirs("cache", exist_ok=True)
-os.environ["HF_HOME"] = "cache"
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
-
 from tqdm import tqdm
 import torch
 
 from deeplens.utils.tools import get_device
 
+import warnings
 warnings.filterwarnings('ignore')
 
 
@@ -37,7 +33,8 @@ class FromHuggingFace():
             seq_length: int = 128,
             inference_batch_size: int = 16, 
             device: str = "auto",
-            save_features: bool = True
+            save_features: bool = True,
+            cache_dir: str = 'cache'
         ) -> None:
         """Initialize the activation extractor with model and dataset configuration.
 
@@ -64,10 +61,13 @@ class FromHuggingFace():
                 selection, "cuda", "mps", or "cpu". Defaults to "auto".
             save_features (bool, optional): Whether to save extracted features to disk in
                 the 'saved_features' directory. Defaults to True.
+            cache_dir (str, optional): Directory to cache downloaded models and datasets.
+                Defaults to 'cache'.
         """
+        os.makedirs(cache_dir, exist_ok=True)
         self.model_name = hf_model.split('/')[-1]
-        self.model = AutoModelForCausalLM.from_pretrained(hf_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model, cache_dir=cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         self.layer = layer
@@ -78,7 +78,8 @@ class FromHuggingFace():
         self.dataset = load_dataset(
             dataset_name, 
             split='train',
-            streaming=True
+            streaming=True,
+            cache_dir=cache_dir
         ).take(num_samples)
 
         self.device = get_device(device)
@@ -232,7 +233,8 @@ class ExtractSingleSample():
             hf_model: str = "gpt2", 
             layer: int = 3, 
             max_length: int = 1024, 
-            device: str = "auto"
+            device: str = "auto",
+            cache_dir: str = 'cache'
         ) -> None:
         """Initialize the single sample extractor with model configuration.
 
@@ -249,9 +251,12 @@ class ExtractSingleSample():
                 sequences will be truncated. Defaults to 1024.
             device (str, optional): Device for model inference. Can be "auto" for automatic
                 selection, "cuda", "mps", or "cpu". Defaults to "auto".
+            cache_dir (str, optional): Directory to cache downloaded models and datasets.
+                Defaults to 'cache'.
         """
-        self.model = AutoModelForCausalLM.from_pretrained(hf_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        os.makedirs(cache_dir, exist_ok=True)
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model, cache_dir=cache_dir)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.layer = layer
         self.max_length = max_length
 

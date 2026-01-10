@@ -33,7 +33,8 @@ class AnalysisUtils():
             hf_model: str = None,
             sae_model: str = None,
             sae_config: str | dict = None,
-            layer: int = None
+            layer: int = None,
+            cache_dir: str = 'cache'
         ):
         """Initialize the AnalysisUtils class for analyzing sparse autoencoder results.
 
@@ -48,8 +49,10 @@ class AnalysisUtils():
                 `get_most_active_features`. Defaults to None.
             layer (int, optional): Index of the transformer layer to extract activations
                 from (0-indexed). Required for `get_most_active_features`. Defaults to None.
+            cache_dir (str, optional): Directory to cache downloaded models.
+                Defaults to 'cache'.
         """
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.hf_model = hf_model
         self.sae_model = sae_model
         self.sae_config = sae_config

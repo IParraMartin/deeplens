@@ -2,8 +2,6 @@ import os
 import yaml
 import warnings
 
-os.makedirs("cache", exist_ok=True)
-os.environ["HF_HOME"] = "cache"
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import transformers
 
@@ -217,7 +215,12 @@ class ReinjectSingleSample():
     Useful for validating feature interventions and conducting mechanistic interpretability
     experiments.
     """
-    def __init__(self, hf_model: str, device: str = "auto"):
+    def __init__(
+            self, 
+            hf_model: str, 
+            device: str = "auto", 
+            cache_dir: str = 'cache'
+        ):
         """Initialize the ReinjectSingleSample class for causal inference with modified activations.
 
         Loads a HuggingFace causal language model and tokenizer to enable reinjection of
@@ -229,12 +232,15 @@ class ReinjectSingleSample():
                 (e.g., "gpt2", "meta-llama/Llama-2-7b").
             device (str, optional): Device to run computations on. Can be "auto" for automatic
                 selection, "cuda" for GPU, or "cpu" for CPU. Defaults to "auto".
+            cache_dir (str, optional): Directory to cache downloaded models.
+                Defaults to 'cache'.
         """
         self.device = get_device(device)
         print(f"Running on device: {self.device}")
         
-        self.model = AutoModelForCausalLM.from_pretrained(hf_model).to(self.device)
-        self.tokenizer = AutoTokenizer.from_pretrained(hf_model)
+        os.makedirs(cache_dir, exist_ok=True)
+        self.model = AutoModelForCausalLM.from_pretrained(hf_model, cache_dir=cache_dir).to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model, cache_dir=cache_dir)
         self.model.eval()
         
     @torch.no_grad()
