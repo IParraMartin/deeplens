@@ -7,8 +7,11 @@ name = "deeplens"
 version = "0.1.0"
 description = "A library to train and use Sparse Autoencoders for mechanistic interpretability"
 readme = "README.md"
-authors = [{name = "Iñigo Parra", email = "iparra@berkeley.edu"}]
-license = {file = "LICENSE"}
+authors = [
+    {name = "Iñigo Parra", email = "iparra@berkeley.edu"}
+]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 keywords = ["machine-learning", "interpretability", "sparse-autoencoders", "mechanistic-interpretability", "deep-learning"]
 classifiers = [
@@ -33,7 +36,7 @@ Repository = "https://github.com/iparramartin/deeplens"
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools]
-packages = {find = {where = ["."], exclude = ["tests*", "demo*", "docs*", "cache*"]}}
+packages = {find = {where = ["."], exclude = ["tests*", "demo*", "docs*", "cache*", "saved_features*"]}}
 
 [tool.setuptools.package-data]
 deeplens = ["py.typed"]
