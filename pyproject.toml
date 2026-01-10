@@ -1,14 +1,17 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deeplens"
+name = "deeplens-sae"
 version = "0.1.0"
 description = "A library to train and use Sparse Autoencoders for mechanistic interpretability"
 readme = "README.md"
-authors = [{name = "Iñigo Parra", email = "iparra@berkeley.edu"}]
-license = {file = "LICENSE"}
+authors = [
+    {name = "Iñigo Parra", email = "iparra@berkeley.edu"}
+]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 keywords = ["machine-learning", "interpretability", "sparse-autoencoders", "mechanistic-interpretability", "deep-learning"]
 classifiers = [
@@ -16,7 +19,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -24,8 +26,8 @@ classifiers = [
 dynamic = ["dependencies"]
 
 [project.urls]
-Homepage = "https://github.com/iparramartin/deeplens"
-Documentation = "https://github.com/iparramartin/deeplens"
+Homepage = "https://iparramartin.github.io/deeplens/"
+Documentation = "https://iparramartin.github.io/deeplens/"
 Repository = "https://github.com/iparramartin/deeplens"
 "Bug Tracker" = "https://github.com/iparramartin/deeplens/issues"
 
@@ -33,7 +35,7 @@ Repository = "https://github.com/iparramartin/deeplens"
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools]
-packages = {find = {where = ["."], exclude = ["tests*", "demo*", "docs*", "cache*"]}}
+packages = {find = {where = ["."], exclude = ["tests*", "demo*", "docs*", "cache*", "saved_features*"]}}
 
 [tool.setuptools.package-data]
 deeplens = ["py.typed"]
