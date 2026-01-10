@@ -70,13 +70,28 @@ out = reinject.reinject_and_generate(
 
 ## Installation
 
+Install from PyPi:
+
+```bash
+pip install deeplens-sae
+
+# FOR WINDOWS
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# OR FOR MAC
+pip install torch torchvision
+```
+
 Install from source:
 
 ```bash
 git clone https://github.com/iparramartin/deeplens
 cd deeplens
+
+# FOR WINDOWS
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
+# OR FOR MAC
+pip install torch torchvision
+
 pip install -e .
 ```
 

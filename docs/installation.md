@@ -26,10 +26,11 @@ pip install torch torchvision
 
 ## Alternative Installation
 
-If you encounter any errors with the standard installation, try the manual installation method:
+If you encounter any errors with the standard installation, try the installation from source:
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/iparramartin/deeplens
+cd deeplens
 
 # FOR WINDOWS
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
