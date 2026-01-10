@@ -14,17 +14,25 @@ conda activate deeplens
 
 The following command should install the necessary dependencies and tools:
 
+**For Windows (CUDA support)**:
 ```bash
 pip install -e .
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 ```
 
-If any errors arise, you may alternatively use the manual installation:
+**For Mac (no CUDA support)**: 
+```bash
+pip install -e .
+pip3 install torch torchvision
+```
 
+If any errors arise, you may alternatively use the manual installation:
 ```bash
 pip install -r requirements.txt
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 pip install -e .
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+# OR FOR MAC
+pip3 install torch torchvision
 ```
 
 ### 1. MLP Feature Extraction
