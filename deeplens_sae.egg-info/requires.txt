@@ -1,8 +1,0 @@
-matplotlib==3.10.8
-numpy<2
-pandas==2.3.3
-PyYAML==6.0.3
-tqdm==4.67.1
-transformers>=4.57.1
-datasets==4.4.2
-wandb==0.23.1
