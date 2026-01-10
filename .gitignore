@@ -7,3 +7,4 @@ saved_models
 .DS_Store
 wandb
 site
+dist
