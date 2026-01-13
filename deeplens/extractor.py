@@ -189,8 +189,9 @@ class FromHuggingFace():
                 tokens = {k: v.to(self.device) for k, v in tokens.items()}
                 _ = self.model(**tokens)
                 batch_acts = activations[-1]
+                activations.clear() # prevent memory leak
                 attention_mask = tokens["attention_mask"].cpu()
-                for i in range(batch_acts.shape[0]):
+                for i in range(batch_acts.shape[0]): # just get non-pad acts
                     non_pad_mask = attention_mask[i].bool()
                     valid_acts = batch_acts[i][non_pad_mask]
                     all_activations.append(valid_acts)
@@ -202,6 +203,7 @@ class FromHuggingFace():
             tokens = {k: v.to(self.device) for k, v in tokens.items()}
             _ = self.model(**tokens)
             batch_acts = activations[-1]
+            activations.clear()
             attention_mask = tokens["attention_mask"].cpu()
             for i in range(batch_acts.shape[0]):
                 non_pad_mask = attention_mask[i].bool()
@@ -219,6 +221,97 @@ class FromHuggingFace():
             torch.save(features, save_path)
             print(f"Features saved to {save_path}")
     
+        return features
+    
+    @torch.no_grad()
+    def extract_features_batched(self, chunk_size: int = 1000) -> torch.Tensor:
+        """Extract MLP activations in disk-backed chunks for large datasets.
+
+        Processes the dataset in batches, extracting activations from the configured 
+        layer and saving them in intermediate chunk files on disk. This method is designed 
+        for memory-efficient extraction from large datasets by periodically writing 
+        features to disk and merging them at the end. Padding tokens are filtered out, 
+        and all valid activations are concatenated into a single tensor.
+
+        The extraction process:
+        1. Batches text samples for efficient processing
+        2. Tokenizes and pads/truncates to seq_length
+        3. Runs forward pass and captures activations via hook
+        4. Filters out activations from padding tokens using attention mask
+        5. Accumulates activations in memory until chunk_size is reached, then saves to disk
+        6. After all data is processed, merges chunk files into a single tensor and deletes the chunks
+
+        Args:
+            chunk_size (int, optional): Number of samples per chunk to accumulate before saving to disk. 
+                Defaults to 1000.
+
+        Returns:
+            torch.Tensor: Concatenated activation tensor with shape (total_tokens, hidden_dim),
+                where total_tokens is the sum of all non-padding tokens across all samples.
+
+        Note:
+            The hook is automatically removed after extraction to prevent memory leaks.
+        """
+        hook, activations = self.set_forward_hook_and_return_activations(self.layer)
+        os.makedirs(f'saved_features/{self.model_name}', exist_ok=True)
+        chunk_paths = []
+        chunk_idx = 0
+        all_activations = []
+        samples_in_chunk = 0
+        batch_texts = []
+
+        def save_chunk():
+            nonlocal chunk_idx, all_activations, samples_in_chunk
+            if all_activations:
+                chunk_features = torch.cat(all_activations, dim=0)
+                chunk_path = f"saved_features/{self.model_name}/chunk_{self.layer}_{chunk_idx}.pt"
+                torch.save(chunk_features, chunk_path)
+                chunk_paths.append(chunk_path)
+                print(f"Saved chunk {chunk_idx} with {chunk_features.shape[0]} tokens")
+                chunk_idx += 1
+                all_activations = []
+                samples_in_chunk = 0
+        
+        def process_batch():
+            nonlocal batch_texts, samples_in_chunk
+            tokens = self.tokenize({'text': batch_texts})
+            tokens = {k: v.to(self.device) for k, v in tokens.items()}
+            _ = self.model(**tokens)
+            batch_acts = activations[-1]
+            activations.clear()
+            attention_mask = tokens["attention_mask"].cpu()
+            for i in range(batch_acts.shape[0]):
+                non_pad_mask = attention_mask[i].bool()
+                valid_acts = batch_acts[i][non_pad_mask]
+                all_activations.append(valid_acts)
+            samples_in_chunk += len(batch_texts)
+            batch_texts = []
+        
+        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
+            batch_texts.append(example['text'])
+            if len(batch_texts) == self.batch_size:
+                process_batch()
+                if samples_in_chunk >= chunk_size:
+                    save_chunk()
+        
+        if batch_texts:
+            process_batch()
+        
+        save_chunk()
+        hook.remove()
+        
+        print("Merging chunks...")
+        all_chunks = [torch.load(p) for p in chunk_paths]
+        features = torch.cat(all_chunks, dim=0)
+        
+        for p in chunk_paths:
+            os.remove(p)
+        
+        if self.save_features:
+            save_path = f"saved_features/{self.model_name}/features_layer_{self.layer}_{features.shape[0]}.pt"
+            torch.save(features, save_path)
+            print(f"Features saved to {save_path}")
+        
         return features
 
 class ExtractSingleSample():
