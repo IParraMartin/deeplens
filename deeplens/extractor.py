@@ -182,7 +182,10 @@ class FromHuggingFace():
         hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         all_activations = []
         batch_texts = []     
-        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
+        for example in tqdm(
+                self.dataset, desc=f"Extracting from L{self.layer}", 
+                total=self.num_samples, ncols=100
+            ):
             batch_texts.append(example['text'])
             if len(batch_texts) == self.batch_size:
                 tokens = self.tokenize({'text': batch_texts})
@@ -255,7 +258,7 @@ class FromHuggingFace():
         hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         os.makedirs(f'saved_features/{self.model_name}', exist_ok=True)
         chunk_paths = []
-        chunk_idx = 0
+        chunk_idx = 1
         all_activations = []
         samples_in_chunk = 0
         batch_texts = []
@@ -267,7 +270,7 @@ class FromHuggingFace():
                 chunk_path = f"saved_features/{self.model_name}/chunk_{self.layer}_{chunk_idx}.pt"
                 torch.save(chunk_features, chunk_path)
                 chunk_paths.append(chunk_path)
-                print(f"Saved chunk {chunk_idx} with {chunk_features.shape[0]} tokens")
+                print(f"Saved chunk {chunk_idx} ({chunk_features.shape[0]} toks)")
                 chunk_idx += 1
                 all_activations = []
                 samples_in_chunk = 0
@@ -287,7 +290,10 @@ class FromHuggingFace():
             samples_in_chunk += len(batch_texts)
             batch_texts = []
         
-        for example in tqdm(self.dataset, desc=f"Extracting from L{self.layer}", total=self.num_samples):
+        for example in tqdm(
+                self.dataset, desc=f"Extracting from L{self.layer}", 
+                total=self.num_samples, ncols=100
+            ):
             batch_texts.append(example['text'])
             if len(batch_texts) == self.batch_size:
                 process_batch()
