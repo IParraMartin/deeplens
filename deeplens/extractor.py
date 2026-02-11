@@ -387,7 +387,7 @@ class ExtractSingleSample():
         hook, activations = self.set_forward_hook_and_return_activations(self.layer)
         tokens = self.tokenize(sample)
         _ = self.model(**tokens)
-        acts = activations[-1].squeeze()
+        acts = activations[-1].squeeze(0)
         hook.remove()
         return acts
     

@@ -123,6 +123,8 @@ class SparseAutoencoder(nn.Module):
                 These are the pre-sparsity latent activations.
         """
         x = self.norm(x)
+        if self.input_norm:
+            return self.activation(self.encoder(x)) # norm already centers
         return self.activation(self.encoder(x - self.b_dec))
 
     def decode(self, z) -> torch.Tensor:
