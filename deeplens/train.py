@@ -191,26 +191,23 @@ class SAETrainer():
                     inputs = inputs.to(self.device)
                     loss, logs = model.loss(inputs)
                 scaler.scale(loss).backward()
-
                 if self.grad_clip_norm is not None:
                     scaler.unscale_(optim)
                     torch.nn.utils.clip_grad_norm_(
                         model.parameters(), self.grad_clip_norm
                     )
-                
                 scaler.step(optim)
                 scaler.update()
 
             else:
                 inputs = inputs.to(self.device)
                 loss, logs = model.loss(inputs)
-
+                loss.backward()
                 if self.grad_clip_norm is not None:
                     torch.nn.utils.clip_grad_norm_(
                         model.parameters(), self.grad_clip_norm
                     )
                 
-                loss.backward()
                 optim.step()
 
             if self.scheduler is not None and not isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau):
