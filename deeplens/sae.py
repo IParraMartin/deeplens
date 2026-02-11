@@ -29,7 +29,7 @@ class SparseAutoencoder(nn.Module):
             activation: str = "relu",
             input_norm: bool = True,
             k: int | None = None,
-            beta_l1: float | None = None,
+            beta_l1: float | None = 0.0,
             tie_weights: bool = False,
             unit_norm_decoder: bool = True
         ) -> None:
@@ -50,7 +50,7 @@ class SparseAutoencoder(nn.Module):
                 per sample) instead of L1 regularization. Mutually exclusive with beta_l1.
                 Defaults to None.
             beta_l1 (float | None, optional): L1 regularization coefficient for sparsity.
-                Higher values encourage sparser activations. Ignored if k is set. Defaults to None.
+                Higher values encourage sparser activations. Ignored if k is set. Defaults to 0.0.
             tie_weights (bool, optional): If True, decoder weights are the transpose of encoder
                 weights (no separate decoder parameters). Reduces parameters but may hurt performance.
                 Defaults to False.
@@ -62,6 +62,7 @@ class SparseAutoencoder(nn.Module):
         self.norm = nn.LayerNorm(input_dims) if input_norm else nn.Identity()
         self.encoder = nn.Linear(input_dims, n_features, bias=True)
         self.decoder = None if tie_weights else nn.Linear(n_features, input_dims, bias=False)
+        self.b_dec = nn.Parameter(torch.zeros(input_dims)) # needed for avoiding collapsing towards the mean
         self.unit_norm_decoder = unit_norm_decoder
         self.input_norm = input_norm
 
@@ -103,7 +104,7 @@ class SparseAutoencoder(nn.Module):
         """
         if self.decoder is not None and self.unit_norm_decoder:
             W = self.decoder.weight.data
-            norms = W.norm(dim=1, keepdim=True).clamp_min(eps)
+            norms = W.norm(dim=0, keepdim=True).clamp_min(eps)
             self.decoder.weight.data = W / norms
 
     def encode(self, x) -> torch.Tensor:
@@ -122,7 +123,9 @@ class SparseAutoencoder(nn.Module):
                 These are the pre-sparsity latent activations.
         """
         x = self.norm(x)
-        return self.activation(self.encoder(x))
+        if self.input_norm:
+            return self.activation(self.encoder(x)) # norm already centers
+        return self.activation(self.encoder(x - self.b_dec))
 
     def decode(self, z) -> torch.Tensor:
         """Decode sparse latent features back to the original activation space.
@@ -139,9 +142,9 @@ class SparseAutoencoder(nn.Module):
                 Should approximate the original input when z contains sufficient information.
         """
         if self.tie_weights:
-            return F.linear(z, self.encoder.weight.t(), bias=None)
+            return F.linear(z, self.encoder.weight.t(), bias=None) + self.b_dec
         else:
-            return self.decoder(z)
+            return self.decoder(z) + self.b_dec
         
     def post_step(self) -> None:
         """Renormalize decoder weights after each optimization step.

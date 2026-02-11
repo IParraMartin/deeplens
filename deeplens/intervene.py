@@ -283,6 +283,8 @@ class ReinjectSingleSample():
             the first forward pass to avoid applying the intervention to newly generated tokens.
         """
         modified_activations = modified_activations.to(self.device)
+        if modified_activations.dim() == 2:
+            modified_activations = modified_activations.unsqueeze(0)
         call_count = [0]
         def replacement_hook(module, input, output):
             if generate and call_count[0] > 0:
